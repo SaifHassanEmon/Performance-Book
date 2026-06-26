@@ -1,0 +1,187 @@
+/* ============================================================
+   App — Main Application Entry Point
+   Performance Book PWA
+   ============================================================ */
+
+const App = (() => {
+
+  async function init() {
+    try {
+      // Initialize database
+      await DB.init();
+
+      // Initialize i18n
+      I18n.init();
+
+      // Load saved theme
+      const savedTheme = localStorage.getItem('perfbook_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      // Register service worker
+      registerSW();
+
+      // Initialize router (registers hash listener + nav clicks)
+      Router.init();
+
+      // Native Android hardware back button handler
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        const CapApp = window.Capacitor.Plugins.App;
+        CapApp.addListener('backButton', () => {
+          const page = Router.getCurrentPage();
+          if (page === 'home' || page === 'login') {
+            const confirmMsg = I18n.getLang() === 'bn'
+              ? 'আপনি কি অ্যাপ্লিকেশন বন্ধ করতে চান?'
+              : 'Are you sure you want to exit the app?';
+            if (confirm(confirmMsg)) {
+              CapApp.exitApp();
+            }
+          } else {
+            Router.navigate('home');
+          }
+        });
+      }
+
+      // Initialize notifications
+      if (typeof Notifications !== 'undefined') {
+        Notifications.init();
+      }
+
+      // Enforce route guards dynamically on auth state change
+      Auth.onAuthStateChanged((user) => {
+        const page = Router.getCurrentPage();
+        if (!user) {
+          if (page !== 'login') {
+            Router.navigate('login');
+          }
+        } else {
+          if (page === 'login') {
+            Router.navigate('home');
+          } else {
+            Router.navigate(page, { force: true });
+          }
+        }
+      });
+
+      // Hide splash, show app
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+        if (splash) {
+          splash.classList.add('fade-out');
+          setTimeout(() => splash.remove(), 500);
+        }
+        if (app) app.style.display = '';
+      }, 800);
+
+      // Online/offline listeners
+      window.addEventListener('online', () => {
+        showToast(I18n.t('common.online'), 'success');
+      });
+      window.addEventListener('offline', () => {
+        showToast(I18n.t('common.offline'), 'info');
+      });
+
+    } catch (err) {
+      console.error('App init error:', err);
+      // Still show app even if DB fails
+      const splash = document.getElementById('splash-screen');
+      const app = document.getElementById('app');
+      if (splash) splash.remove();
+      if (app) app.style.display = '';
+    }
+  }
+
+  function registerSW() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          console.log('SW registered:', reg.scope);
+        })
+        .catch(err => {
+          console.warn('SW registration failed:', err);
+        });
+    }
+  }
+
+  // ---- Toast Notifications ----
+  function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+      success: '✓',
+      error: '✗',
+      info: 'ℹ',
+    };
+
+    toast.innerHTML = `
+      <span style="font-size:1.1rem;font-weight:700;">${icons[type] || 'ℹ'}</span>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  // ---- Utility: Format Date ----
+  function formatDate(date, lang) {
+    const d = new Date(date);
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const locale = lang === 'bn' ? 'bn-BD' : 'en-US';
+    try {
+      return d.toLocaleDateString(locale, options);
+    } catch {
+      return d.toLocaleDateString('en-US', options);
+    }
+  }
+
+  // ---- Utility: Get Month Name ----
+  function getMonthName(month, lang) {
+    const date = new Date(2000, month - 1, 1);
+    const locale = lang === 'bn' ? 'bn-BD' : 'en-US';
+    try {
+      return date.toLocaleDateString(locale, { month: 'long' });
+    } catch {
+      return date.toLocaleDateString('en-US', { month: 'long' });
+    }
+  }
+
+  // ---- Utility: Days in Month ----
+  function getDaysInMonth(year, month) {
+    return new Date(year, month, 0).getDate();
+  }
+
+  // ---- Utility: Parse time string "HH:MM" to minutes ----
+  function timeToMinutes(timeStr) {
+    if (!timeStr || timeStr === '') return 0;
+    const parts = timeStr.split(':');
+    return (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+  }
+
+  // ---- Utility: Minutes to "HH:MM" ----
+  function minutesToTime(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  return {
+    init,
+    showToast,
+    formatDate,
+    getMonthName,
+    getDaysInMonth,
+    timeToMinutes,
+    minutesToTime,
+  };
+})();
+
+// Boot the app when DOM is ready
+document.addEventListener('DOMContentLoaded', App.init);

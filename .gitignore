@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Web Build Output
+www/
+
+# Android Build Artifacts & Configuration
+.gradle/
+build/
+local.properties
+*.apk
+android/.gradle/
+android/local.properties
+android/app/build/
+android/.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
