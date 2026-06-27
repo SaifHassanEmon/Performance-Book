@@ -8,6 +8,8 @@ Router.register('supervisor', async function (container) {
   let activeView = 'list'; // list, detail, daily_logs
   let selectedSubmission = null;
   let memberDailyLogs = [];
+  let selectedYear = new Date().getFullYear();
+  let selectedMonth = new Date().getMonth() + 1;
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -49,52 +51,68 @@ Router.register('supervisor', async function (container) {
     container.removeAttribute('style'); // Clear any page-specific scrolling overrides
     
     let submissions = [];
+    let supervisedMembers = [];
     try {
-      submissions = await Sync.getSubmittedReportsForSupervisor();
-      // Filter submissions by supervisedUposakhas unless admin
+      // Fetch all submissions
+      const allSubmissions = await Sync.getSubmittedReportsForSupervisor() || [];
+      // Filter by selected year and month
+      submissions = allSubmissions.filter(sub => sub.year === parseInt(selectedYear) && sub.month === parseInt(selectedMonth));
+
+      // Fetch all members
+      const allMembers = await Sync.getAllMembers() || [];
+      // Filter members by supervisor's supervisedUposakhas unless admin
       const isAdmin = user.isAdmin || user.role === 'admin';
-      if (!isAdmin) {
+      if (isAdmin) {
+        supervisedMembers = allMembers;
+      } else {
         const supervised = user.supervisedUposakhas || [];
-        submissions = submissions.filter(sub => supervised.includes(sub.memberUposakha));
+        supervisedMembers = allMembers.filter(m => supervised.includes(m.uposakha));
       }
     } catch (e) {
       console.error(e);
-      App.showToast("Failed to fetch submissions", "error");
+      App.showToast("Failed to load members or submissions", "error");
     }
 
     let listHtml = '';
-    if (submissions.length === 0) {
+    if (supervisedMembers.length === 0) {
       listHtml = `
         <div style="text-align:center; padding:var(--space-2xl) 0; color:var(--text-secondary);">
-          <div style="font-size:2.5rem; margin-bottom:var(--space-sm);">📬</div>
-          <p style="font-size:0.875rem;">No monthly reports submitted for review yet.</p>
+          <div style="font-size:2.5rem; margin-bottom:var(--space-sm);">👥</div>
+          <p style="font-size:0.875rem;">No members found in your supervised Uposakhas.</p>
         </div>
       `;
     } else {
-      submissions.forEach(sub => {
-        const isReviewed = sub.status === 'reviewed';
-        listHtml += `
-          <div class="glass-card" style="margin-bottom:var(--space-md); padding:var(--space-lg);">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--space-sm);">
-              <div>
-                <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">${sub.memberName}</h4>
-                <p style="font-size:0.75rem; color:var(--text-muted);">${sub.memberEmail} ${sub.memberUposakha ? `(${sub.memberUposakha})` : ''}</p>
-              </div>
-              <span class="badge ${isReviewed ? 'badge-green' : 'badge-amber'}">
-                ${isReviewed ? 'Reviewed' : 'Pending'}
-              </span>
-            </div>
-            
-            <div style="margin-bottom:var(--space-md); font-size:0.8125rem; color:var(--text-secondary);">
-              <div><strong>Report Month:</strong> ${monthNames[sub.month - 1]} ${sub.year}</div>
-              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
-                <strong>Submitted:</strong> ${new Date(sub.submittedAt).toLocaleString()}
-              </div>
-            </div>
+      supervisedMembers.forEach(m => {
+        // Find if this member submitted a report for the selected month/year
+        const sub = submissions.find(s => s.uid === m.uid);
+        
+        let statusLabel = 'Not Submitted';
+        let badgeClass = 'badge-amber';
+        if (sub) {
+          const isReviewed = sub.status === 'reviewed';
+          statusLabel = isReviewed ? 'Reviewed' : 'Pending Review';
+          badgeClass = isReviewed ? 'badge-green' : 'badge-amber';
+        } else {
+          badgeClass = '';
+        }
 
-            <div style="display:flex; gap:var(--space-sm);">
-              <button class="btn btn-secondary btn-sm inspect-plan-btn" data-id="${sub.id}" style="flex:1;">Review Details</button>
-              <button class="btn btn-secondary btn-sm inspect-logs-btn" data-id="${sub.id}" style="flex:1;">View Daily Grid</button>
+        listHtml += `
+          <div class="glass-card" style="margin-bottom:var(--space-md); padding:var(--space-lg); display: flex; justify-content: space-between; align-items: center; gap: var(--space-md);">
+            <div>
+              <h4 style="font-size:0.95rem; font-weight:700; color:var(--text-primary);">${m.displayName || 'Unnamed User'}</h4>
+              <p style="font-size:0.75rem; color:var(--text-secondary);">${m.email} ${m.uposakha ? `(${m.uposakha})` : ''}</p>
+              <div style="margin-top: 6px;">
+                <span class="badge ${badgeClass}" style="${!sub ? 'background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color);' : ''}">
+                  ${statusLabel}
+                </span>
+              </div>
+            </div>
+            <div>
+              ${sub ? `
+                <button class="btn btn-primary btn-sm inspect-plan-btn" data-id="${sub.id}" style="font-weight: 600; padding: 6px 12px; font-size: 0.8125rem;">View Report</button>
+              ` : `
+                <button class="btn btn-secondary btn-sm" disabled style="opacity: 0.4; cursor: not-allowed; font-weight: 600; padding: 6px 12px; font-size: 0.8125rem; background: rgba(255,255,255,0.03); color: var(--text-muted); border: 1px solid var(--border-color);">No Report</button>
+              `}
             </div>
           </div>
         `;
@@ -103,43 +121,63 @@ Router.register('supervisor', async function (container) {
 
     container.innerHTML = `
       <!-- Dashboard Header -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-xl); margin-top:var(--space-md);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-lg); margin-top:var(--space-md);">
         <div>
           <h2 style="font-size:1.25rem; font-weight:800; color:var(--text-primary);">Supervisor Dashboard</h2>
           <p style="font-size:0.75rem; color:var(--text-muted);">Review submitted booklets & reports</p>
         </div>
       </div>
 
+      <!-- Year & Month Selector -->
+      <div style="display:flex; gap:var(--space-md); margin-bottom:var(--space-xl); flex-wrap:wrap;">
+        <div style="flex: 1; min-width: 120px;">
+          <label class="form-label" style="font-size: 0.75rem; margin-bottom: 4px;">Year</label>
+          <select id="super-year-select" class="form-input" style="color: var(--text-primary); background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); cursor: pointer; padding: 6px 10px; font-size: 0.8125rem; border-radius: 6px;">
+            <option value="2025" ${selectedYear === 2025 ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">2025</option>
+            <option value="2026" ${selectedYear === 2026 ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">2026</option>
+            <option value="2027" ${selectedYear === 2027 ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">2027</option>
+          </select>
+        </div>
+        <div style="flex: 1; min-width: 120px;">
+          <label class="form-label" style="font-size: 0.75rem; margin-bottom: 4px;">Month</label>
+          <select id="super-month-select" class="form-input" style="color: var(--text-primary); background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); cursor: pointer; padding: 6px 10px; font-size: 0.8125rem; border-radius: 6px;">
+            ${monthNames.map((name, index) => `
+              <option value="${index + 1}" ${selectedMonth === index + 1 ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">${name}</option>
+            `).join('')}
+          </select>
+        </div>
+      </div>
+
       <!-- List Container -->
       <div style="margin-bottom:var(--space-2xl);">
-        <h3 class="settings-group-title" style="margin-bottom:var(--space-md);">Submitted Reports</h3>
+        <h3 class="settings-group-title" style="margin-bottom:var(--space-md);">Uposakha Members</h3>
         ${listHtml}
       </div>
     `;
 
     // Wire up events
+    const yearSelect = container.querySelector('#super-year-select');
+    if (yearSelect) {
+      yearSelect.addEventListener('change', (e) => {
+        selectedYear = parseInt(e.target.value);
+        renderListView(user);
+      });
+    }
+
+    const monthSelect = container.querySelector('#super-month-select');
+    if (monthSelect) {
+      monthSelect.addEventListener('change', (e) => {
+        selectedMonth = parseInt(e.target.value);
+        renderListView(user);
+      });
+    }
+
     container.querySelectorAll('.inspect-plan-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
         selectedSubmission = submissions.find(s => s.id === id);
         activeView = 'detail';
         renderDashboard();
-      });
-    });
-
-    container.querySelectorAll('.inspect-logs-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        selectedSubmission = submissions.find(s => s.id === id);
-        App.showToast("Loading member logs...", "info");
-        try {
-          memberDailyLogs = await Sync.getMemberDailyReports(selectedSubmission.uid, selectedSubmission.year, selectedSubmission.month);
-          activeView = 'daily_logs';
-          renderDashboard();
-        } catch (e) {
-          console.error(e);
-          App.showToast("Failed to load logs", "error");
-        }
       });
     });
   }
@@ -163,14 +201,19 @@ Router.register('supervisor', async function (container) {
 
     container.innerHTML = `
       <!-- Header -->
-      <div style="display:flex; align-items:center; gap:var(--space-md); margin-bottom:var(--space-lg); margin-top:var(--space-md);">
-        <button id="detail-back-btn" class="header-btn" style="color:var(--text-secondary);">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </button>
-        <div>
-          <h2 style="font-size:1.1rem; font-weight:800;">Reviewing Monthly Report</h2>
-          <p style="font-size:0.75rem; color:var(--text-muted);">${sub.memberName} — ${monthNames[sub.month - 1]} ${sub.year}</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-lg); margin-top:var(--space-md);">
+        <div style="display:flex; align-items:center; gap:var(--space-md);">
+          <button id="detail-back-btn" class="header-btn" style="color:var(--text-secondary); background: none; border: none; cursor: pointer; display: flex; align-items: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div>
+            <h2 style="font-size:1.1rem; font-weight:800;">Reviewing Monthly Report</h2>
+            <p style="font-size:0.75rem; color:var(--text-muted);">${sub.memberName} — ${monthNames[sub.month - 1]} ${sub.year}</p>
+          </div>
         </div>
+        <button id="detail-view-grid-btn" class="btn btn-secondary btn-sm" style="padding: 6px 12px; font-weight: 600;">
+          View Daily Grid
+        </button>
       </div>
 
       <!-- Plan Details (Read Only) -->
@@ -283,6 +326,21 @@ Router.register('supervisor', async function (container) {
       activeView = 'list';
       renderDashboard();
     });
+
+    const gridBtn = container.querySelector('#detail-view-grid-btn');
+    if (gridBtn) {
+      gridBtn.addEventListener('click', async () => {
+        App.showToast("Loading member logs...", "info");
+        try {
+          memberDailyLogs = await Sync.getMemberDailyReports(sub.uid, sub.year, sub.month);
+          activeView = 'daily_logs';
+          renderDashboard();
+        } catch (e) {
+          console.error(e);
+          App.showToast("Failed to load logs", "error");
+        }
+      });
+    }
 
     container.querySelector('#feedback-approve-btn').addEventListener('click', async () => {
       const feedback = container.querySelector('#feedback-text').value;
@@ -412,7 +470,7 @@ Router.register('supervisor', async function (container) {
 
     // Wire events
     container.querySelector('#logs-back-btn').addEventListener('click', () => {
-      activeView = 'list';
+      activeView = 'detail';
       renderDashboard();
     });
   }
