@@ -48,12 +48,14 @@ const Router = (() => {
         page = 'home';
       } else if (page === 'supervisor') {
         // Only supervisors or admins can view supervisor review page
-        if (user.role !== 'supervisor' && user.role !== 'admin') {
+        const isSuper = user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin';
+        if (!isSuper) {
           page = 'home';
         }
       } else if (page === 'admin') {
         // Only admins can view admin page
-        if (user.role !== 'admin') {
+        const isAdmin = user.isAdmin || user.role === 'admin';
+        if (!isAdmin) {
           page = 'home';
         }
       }
@@ -158,10 +160,12 @@ const Router = (() => {
 
     const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
     if (supervisorBtn) {
-      supervisorBtn.style.display = (currentPage === 'home' && user && (user.role === 'supervisor' || user.role === 'admin')) ? '' : 'none';
+      const isSuper = user && (user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin');
+      supervisorBtn.style.display = (currentPage === 'home' && user && isSuper) ? '' : 'none';
     }
     if (adminBtn) {
-      adminBtn.style.display = (currentPage === 'home' && user && user.role === 'admin') ? '' : 'none';
+      const isAdmin = user && (user.isAdmin || user.role === 'admin');
+      adminBtn.style.display = (currentPage === 'home' && user && isAdmin) ? '' : 'none';
     }
   }
 

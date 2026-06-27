@@ -61,7 +61,7 @@ Router.register('admin', async function (container) {
       `;
     } else {
       filteredUsers.forEach(u => {
-        const isSuper = u.role === 'supervisor';
+        const isSuper = u.isSupervisor || u.role === 'supervisor';
         const supervised = u.supervisedUposakhas || [];
         
         usersHtml += `
@@ -75,17 +75,25 @@ Router.register('admin', async function (container) {
                 ${u.mobile ? `<p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 1px;">📞 ${u.mobile}</p>` : ''}
               </div>
               <div style="display: flex; flex-direction: column; gap: var(--space-xs); align-items: flex-end;">
-                <!-- Role Select -->
+                <!-- Membership Select -->
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Role:</span>
-                  <select class="form-input admin-role-select" data-uid="${u.uid}" style="width: 130px; padding: 4px 8px; font-size: 0.8125rem; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary);">
-                    <option value="member" ${u.role === 'member' || !u.role ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Member</option>
+                  <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Membership:</span>
+                  <select class="form-input admin-role-select" data-uid="${u.uid}" style="width: 120px; padding: 4px 8px; font-size: 0.8125rem; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary);">
+                    <option value="member" ${u.role === 'member' || !u.role || u.role === 'supervisor' || u.role === 'admin' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Member</option>
                     <option value="Associate" ${u.role === 'Associate' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Associate</option>
                     <option value="worker" ${u.role === 'worker' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Worker</option>
                     <option value="Supporter" ${u.role === 'Supporter' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Supporter</option>
-                    <option value="supervisor" ${u.role === 'supervisor' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Supervisor</option>
-                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Admin</option>
                   </select>
+                </div>
+
+                <!-- Role Options (Supervisor / Admin Checkboxes) -->
+                <div style="display: flex; gap: 12px; margin-top: 4px;">
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; color: var(--text-primary); font-weight: 600;">
+                    <input type="checkbox" class="admin-supervisor-check" data-uid="${u.uid}" ${u.isSupervisor || u.role === 'supervisor' ? 'checked' : ''} style="accent-color: var(--color-primary);"> Supervisor
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; color: var(--text-primary); font-weight: 600;">
+                    <input type="checkbox" class="admin-admin-check" data-uid="${u.uid}" ${u.isAdmin || u.role === 'admin' ? 'checked' : ''} style="accent-color: var(--color-primary);"> Admin
+                  </label>
                 </div>
               </div>
             </div>
@@ -190,7 +198,7 @@ Router.register('admin', async function (container) {
       });
     }
 
-    // Role selection
+    // Membership Select
     container.querySelectorAll('.admin-role-select').forEach(select => {
       select.addEventListener('change', async () => {
         const uid = select.getAttribute('data-uid');
@@ -198,30 +206,87 @@ Router.register('admin', async function (container) {
         const targetUser = usersList.find(u => u.uid === uid);
         if (!targetUser) return;
 
-        App.showToast("Updating user role...", "info");
+        App.showToast("Updating membership...", "info");
         try {
-          const updates = { role: newRole };
-          if (newRole === 'supervisor' && !targetUser.supervisedUposakhas) {
-            updates.supervisedUposakhas = [];
-          }
-          await Sync.adminUpdateUser(uid, updates);
-          
-          // Update local state
+          await Sync.adminUpdateUser(uid, { role: newRole });
           targetUser.role = newRole;
-          if (newRole === 'supervisor' && !targetUser.supervisedUposakhas) {
+          App.showToast(`${targetUser.displayName}'s membership updated to ${newRole}!`, "success");
+        } catch (err) {
+          console.error(err);
+          App.showToast("Failed to update membership", "error");
+        }
+      });
+    });
+
+    // Supervisor toggle
+    container.querySelectorAll('.admin-supervisor-check').forEach(check => {
+      check.addEventListener('change', async () => {
+        const uid = check.getAttribute('data-uid');
+        const isSupervisor = check.checked;
+        const targetUser = usersList.find(u => u.uid === uid);
+        if (!targetUser) return;
+
+        App.showToast(isSupervisor ? "Promoting to Supervisor..." : "Demoting from Supervisor...", "info");
+        try {
+          const updates = { isSupervisor };
+          if (!isSupervisor && targetUser.role === 'supervisor') {
+            updates.role = 'member';
+            targetUser.role = 'member';
+          }
+          if (isSupervisor && !targetUser.supervisedUposakhas) {
+            updates.supervisedUposakhas = [];
             targetUser.supervisedUposakhas = [];
           }
+          await Sync.adminUpdateUser(uid, updates);
+          targetUser.isSupervisor = isSupervisor;
 
-          App.showToast(`${targetUser.displayName}'s role updated to ${newRole}!`, "success");
+          App.showToast(isSupervisor ? "Promoted to Supervisor successfully!" : "Supervisor privileges removed.", "success");
           
           // Show or hide uposakha select section
           const superSection = container.querySelector(`#super-section-${uid}`);
           if (superSection) {
-            superSection.style.display = newRole === 'supervisor' ? 'block' : 'none';
+            superSection.style.display = isSupervisor ? 'block' : 'none';
           }
         } catch (err) {
           console.error(err);
-          App.showToast("Failed to update role", "error");
+          App.showToast("Failed to update Supervisor privileges", "error");
+          check.checked = !isSupervisor; // Revert
+        }
+      });
+    });
+
+    // Admin toggle
+    container.querySelectorAll('.admin-admin-check').forEach(check => {
+      check.addEventListener('change', async () => {
+        const uid = check.getAttribute('data-uid');
+        const isAdmin = check.checked;
+        const targetUser = usersList.find(u => u.uid === uid);
+        if (!targetUser) return;
+
+        const confirmMsg = isAdmin 
+          ? `Are you sure you want to make ${targetUser.displayName} an Admin? Admins have full access to all system data and roles.`
+          : `Are you sure you want to remove Admin privileges from ${targetUser.displayName}?`;
+        
+        if (!confirm(confirmMsg)) {
+          check.checked = !isAdmin; // Revert checkbox without saving
+          return;
+        }
+
+        App.showToast(isAdmin ? "Promoting to Admin..." : "Demoting from Admin...", "info");
+        try {
+          const updates = { isAdmin };
+          if (!isAdmin && targetUser.role === 'admin') {
+            updates.role = 'member';
+            targetUser.role = 'member';
+          }
+          await Sync.adminUpdateUser(uid, updates);
+          targetUser.isAdmin = isAdmin;
+
+          App.showToast(isAdmin ? "Promoted to Admin successfully!" : "Admin privileges removed.", "success");
+        } catch (err) {
+          console.error(err);
+          App.showToast("Failed to update Admin privileges", "error");
+          check.checked = !isAdmin; // Revert
         }
       });
     });

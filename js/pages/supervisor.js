@@ -16,7 +16,8 @@ Router.register('supervisor', async function (container) {
 
   async function renderDashboard() {
     const user = Auth.getCurrentUser();
-    if (!user || (user.role !== 'supervisor' && user.role !== 'admin')) {
+    const isSuper = user && (user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin');
+    if (!user || !isSuper) {
       container.innerHTML = `
         <div class="glass-card" style="text-align:center; padding:var(--space-2xl) var(--space-lg); margin-top:var(--space-xl);">
           <div style="font-size:3rem; margin-bottom:var(--space-md);">⚠️</div>
@@ -51,7 +52,8 @@ Router.register('supervisor', async function (container) {
     try {
       submissions = await Sync.getSubmittedReportsForSupervisor();
       // Filter submissions by supervisedUposakhas unless admin
-      if (user.role !== 'admin') {
+      const isAdmin = user.isAdmin || user.role === 'admin';
+      if (!isAdmin) {
         const supervised = user.supervisedUposakhas || [];
         submissions = submissions.filter(sub => supervised.includes(sub.memberUposakha));
       }

@@ -146,7 +146,8 @@ const Sync = (() => {
   // ---- Fetch Submitted Reports for Supervisor ----
   async function getSubmittedReportsForSupervisor() {
     const user = Auth.getCurrentUser();
-    if (!user || user.role !== 'supervisor') {
+    const isSuper = user && (user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin');
+    if (!user || !isSuper) {
       throw new Error("Unauthorized access. Supervisor role required.");
     }
 
@@ -220,14 +221,14 @@ const Sync = (() => {
       const users = [];
       snapshot.forEach(doc => {
         const d = doc.data();
-        if (d.role !== 'supervisor') {
+        if (!d.isSupervisor && d.role !== 'supervisor') {
           users.push(d);
         }
       });
       return users;
     } else {
       const users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
-      return users.filter(u => u.role !== 'supervisor');
+      return users.filter(u => !u.isSupervisor && u.role !== 'supervisor');
     }
   }
 
@@ -397,7 +398,8 @@ const Sync = (() => {
 
   async function getAllUsers() {
     const currentUser = Auth.getCurrentUser();
-    if (!currentUser || currentUser.role !== 'admin') {
+    const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
+    if (!currentUser || !isAdmin) {
       throw new Error("Unauthorized. Admin role required.");
     }
     if (FirebaseAvailable) {
@@ -414,7 +416,8 @@ const Sync = (() => {
 
   async function adminUpdateUser(uid, updates) {
     const currentUser = Auth.getCurrentUser();
-    if (!currentUser || currentUser.role !== 'admin') {
+    const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
+    if (!currentUser || !isAdmin) {
       throw new Error("Unauthorized. Admin role required.");
     }
     if (FirebaseAvailable) {

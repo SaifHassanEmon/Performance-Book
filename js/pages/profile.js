@@ -13,7 +13,14 @@ Router.register('profile', async function (container) {
   function renderView() {
     const isMock = !FirebaseAvailable;
     const isVerified = isMock ? true : (firebase.auth().currentUser?.emailVerified || false);
-    const capRole = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    let capRole = user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Member';
+    const isSuper = user.isSupervisor || user.role === 'supervisor';
+    const isAdmin = user.isAdmin || user.role === 'admin';
+    if (isAdmin) {
+      capRole = capRole === 'Admin' ? 'Admin' : `${capRole} (Admin)`;
+    } else if (isSuper) {
+      capRole = capRole === 'Supervisor' ? 'Supervisor' : `${capRole} (Supervisor)`;
+    }
     
     container.innerHTML = `
       <!-- Back button and title -->
@@ -96,7 +103,7 @@ Router.register('profile', async function (container) {
           ` : ''}
 
           <!-- Supervised Uposakhas (if supervisor) -->
-          ${user.role === 'supervisor' ? `
+          ${(user.isSupervisor || user.role === 'supervisor') ? `
           <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
             <span style="color:var(--text-secondary);">Supervised Uposakhas</span>
             <span style="color:var(--green-400); font-weight:700; text-align: right;">${(user.supervisedUposakhas || []).join(', ') || 'None'}</span>

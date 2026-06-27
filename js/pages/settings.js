@@ -16,7 +16,14 @@ Router.register('settings', async function (container) {
     const user = Auth.getCurrentUser();
     let profileHtml = '';
     if (user) {
-      const capRole = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+      let capRole = user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Member';
+      const isSuper = user.isSupervisor || user.role === 'supervisor';
+      const isAdmin = user.isAdmin || user.role === 'admin';
+      if (isAdmin) {
+        capRole = capRole === 'Admin' ? 'Admin' : `${capRole} (Admin)`;
+      } else if (isSuper) {
+        capRole = capRole === 'Supervisor' ? 'Supervisor' : `${capRole} (Supervisor)`;
+      }
       profileHtml = `
         <!-- Account & Profile Section -->
         <div class="settings-group" style="margin-top: 0;">
