@@ -736,8 +736,10 @@ Router.register('daily-report', async function (container) {
   function calculateCurrentSummary() {
     const daysInMonth = App.getDaysInMonth(currentYear, currentMonth);
     
-    let mqTotalDays = 0;
-    let mqAvgAyahSum = 0;
+    let mqStudyTotalDays = 0;
+    let mqStudyAvgSum = 0;
+    let mqTelawatTotalDays = 0;
+    let mqTelawatAvgSum = 0;
     
     let mhTotalDays = 0;
     let mhAvgSum = 0;
@@ -776,9 +778,13 @@ Router.register('daily-report', async function (container) {
       const qtInput = row.querySelector('[data-field="quranT"]');
       const qs = qsInput ? parseInt(qsInput.value, 10) || 0 : 0;
       const qt = qtInput ? parseInt(qtInput.value, 10) || 0 : 0;
-      if (qs > 0 || qt > 0) {
-        mqTotalDays++;
-        mqAvgAyahSum += (qs + qt);
+      if (qs > 0) {
+        mqStudyTotalDays++;
+        mqStudyAvgSum += qs;
+      }
+      if (qt > 0) {
+        mqTelawatTotalDays++;
+        mqTelawatAvgSum += qt;
       }
 
       // Hadith
@@ -850,7 +856,8 @@ Router.register('daily-report', async function (container) {
       }
     }
 
-    const mqAvgAyah = mqTotalDays > 0 ? Math.round(mqAvgAyahSum / mqTotalDays) : 0;
+    const mqStudyAvgAyah = mqStudyTotalDays > 0 ? Math.round(mqStudyAvgSum / mqStudyTotalDays) : 0;
+    const mqTelawatAvgAyah = mqTelawatTotalDays > 0 ? Math.round(mqTelawatAvgSum / mqTelawatTotalDays) : 0;
     const mhAvg = mhTotalDays > 0 ? Math.round(mhAvgSum / mhTotalDays) : 0;
     const maAvgHours = maTotalDays > 0 ? parseFloat((maTotalMinutes / maTotalDays / 60).toFixed(1)) : 0;
     const mdAvgHours = mdDay > 0 ? parseFloat((mdTotalMinutes / mdDay / 60).toFixed(1)) : 0;
@@ -858,7 +865,8 @@ Router.register('daily-report', async function (container) {
     const msAvgHours = msDays > 0 ? parseFloat((msTotalMinutes / msDays / 60).toFixed(1)) : 0;
 
     return {
-      mqTotalDays, mqAvgAyah,
+      mqStudyTotalDays, mqStudyAvgAyah,
+      mqTelawatTotalDays, mqTelawatAvgAyah,
       mhTotalDays, mhAvg,
       mlTotalPages, mlIslamic, mlOthers,
       maTotalDays, maAvgHours,
@@ -905,8 +913,13 @@ Router.register('daily-report', async function (container) {
             <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
               <span>📖</span> The Holy Quran
             </div>
-            ${renderModalRow('Total Days Telawat/Study', summary.mqTotalDays)}
-            ${renderModalRow('Average Ayah / Day', summary.mqAvgAyah)}
+            <div style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700; margin-top: var(--space-xs); margin-bottom: 2px;">Study with Tafsir (তাফসীরসহ অধ্যয়ন)</div>
+            ${renderModalRow('Total Days Studied', summary.mqStudyTotalDays)}
+            ${renderModalRow('Average Ayah / Day', summary.mqStudyAvgAyah)}
+            
+            <div style="font-size: 0.75rem; color: var(--color-primary); font-weight: 700; margin-top: var(--space-md); margin-bottom: 2px;">Only Telawat (শুধুমাত্র তিলাওয়াত)</div>
+            ${renderModalRow('Total Days Recited', summary.mqTelawatTotalDays)}
+            ${renderModalRow('Average Ayah / Day', summary.mqTelawatAvgAyah)}
           </div>
 
           <!-- Hadith -->
