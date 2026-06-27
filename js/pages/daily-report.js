@@ -223,6 +223,7 @@ Router.register('daily-report', async function (container) {
         </div>
         <div style="display: flex; gap: var(--space-sm);">
           <button id="dr-save-changes-btn" class="btn btn-success" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; display: none; font-weight: 600; cursor: pointer; border: none; background-color: var(--color-success); color: white;" data-i18n="daily.saveChanges">${I18n.t('daily.saveChanges')}</button>
+          <button id="dr-view-report-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background-color: rgba(255,255,255,0.03); color: var(--text-primary);">View Report</button>
           <button id="dr-submit-btn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background-color: var(--color-primary); color: white;" data-i18n="daily.submit">${I18n.t('daily.submit')}</button>
         </div>
       </div>
@@ -325,6 +326,14 @@ Router.register('daily-report', async function (container) {
       saveChangesBtn.addEventListener('click', async () => {
         await saveAllChanges();
         Router.clearBeforeNavigate();
+      });
+    }
+
+    // View report button click
+    const viewReportBtn = container.querySelector('#dr-view-report-btn');
+    if (viewReportBtn) {
+      viewReportBtn.addEventListener('click', () => {
+        showReportModal();
       });
     }
 
@@ -722,6 +731,258 @@ Router.register('daily-report', async function (container) {
       const el = container.querySelector(`#total-${f}`);
       if (el) el.textContent = totals[f];
     });
+  }
+
+  function calculateCurrentSummary() {
+    const daysInMonth = App.getDaysInMonth(currentYear, currentMonth);
+    
+    let mqTotalDays = 0;
+    let mqAvgAyahSum = 0;
+    
+    let mhTotalDays = 0;
+    let mhAvgSum = 0;
+    
+    let mlTotalPages = 0;
+    let mlIslamic = 0;
+    let mlOthers = 0;
+    
+    let maTotalDays = 0;
+    let maTotalMinutes = 0;
+    
+    let mcMember = 0;
+    let mcAssociate = 0;
+    let mcWorker = 0;
+    let mcSupporter = 0;
+    let mcFriends = 0;
+    let mcWellWisher = 0;
+    let mcMeritorious = 0;
+    let mcReader = 0;
+    
+    let mdDay = 0;
+    let mdTotalMinutes = 0;
+    
+    let moTotalDays = 0;
+    let moTotalMinutes = 0;
+    
+    let msDays = 0;
+    let msTotalMinutes = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const row = container.querySelector(`tr[data-day-row="${day}"]`);
+      if (!row) continue;
+
+      // Quran
+      const qsInput = row.querySelector('[data-field="quranS"]');
+      const qtInput = row.querySelector('[data-field="quranT"]');
+      const qs = qsInput ? parseInt(qsInput.value, 10) || 0 : 0;
+      const qt = qtInput ? parseInt(qtInput.value, 10) || 0 : 0;
+      if (qs > 0 || qt > 0) {
+        mqTotalDays++;
+        mqAvgAyahSum += (qs + qt);
+      }
+
+      // Hadith
+      const hnInput = row.querySelector('[data-field="hadithNum"]');
+      const hn = hnInput ? parseInt(hnInput.value, 10) || 0 : 0;
+      if (hn > 0) {
+        mhTotalDays++;
+        mhAvgSum += hn;
+      }
+
+      // Literature
+      const liInput = row.querySelector('[data-field="litI"]');
+      const lgInput = row.querySelector('[data-field="litG"]');
+      const li = liInput ? parseInt(liInput.value, 10) || 0 : 0;
+      const lg = lgInput ? parseInt(lgInput.value, 10) || 0 : 0;
+      mlIslamic += li;
+      mlOthers += lg;
+      mlTotalPages += (li + lg);
+
+      // Academic
+      const acadInput = row.querySelector('[data-field="academic"]');
+      const acadMins = acadInput ? App.timeToMinutes(acadInput.value) : 0;
+      if (acadMins > 0) {
+        maTotalDays++;
+        maTotalMinutes += acadMins;
+      }
+
+      // Contacts
+      const cmInput = row.querySelector('[data-field="contactM"]');
+      const caInput = row.querySelector('[data-field="contactA"]');
+      const cwInput = row.querySelector('[data-field="contactW"]');
+      const csInput = row.querySelector('[data-field="contactS"]');
+      const cfInput = row.querySelector('[data-field="contactF"]');
+      const cwwInput = row.querySelector('[data-field="contactWW"]');
+      const cmsInput = row.querySelector('[data-field="contactMS"]');
+      const crInput = row.querySelector('[data-field="contactR"]');
+
+      mcMember += cmInput ? parseInt(cmInput.value, 10) || 0 : 0;
+      mcAssociate += caInput ? parseInt(caInput.value, 10) || 0 : 0;
+      mcWorker += cwInput ? parseInt(cwInput.value, 10) || 0 : 0;
+      mcSupporter += csInput ? parseInt(csInput.value, 10) || 0 : 0;
+      mcFriends += cfInput ? parseInt(cfInput.value, 10) || 0 : 0;
+      mcWellWisher += cwwInput ? parseInt(cwwInput.value, 10) || 0 : 0;
+      mcMeritorious += cmsInput ? parseInt(cmsInput.value, 10) || 0 : 0;
+      mcReader += crInput ? parseInt(crInput.value, 10) || 0 : 0;
+
+      // Dawah
+      const dawahInput = row.querySelector('[data-field="dawah"]');
+      const dawahMins = dawahInput ? App.timeToMinutes(dawahInput.value) : 0;
+      if (dawahMins > 0) {
+        mdDay++;
+        mdTotalMinutes += dawahMins;
+      }
+
+      // Org Work
+      const orgInput = row.querySelector('[data-field="orgWork"]');
+      const orgMins = orgInput ? App.timeToMinutes(orgInput.value) : 0;
+      if (orgMins > 0) {
+        moTotalDays++;
+        moTotalMinutes += orgMins;
+      }
+
+      // Sleeping
+      const sleepInput = row.querySelector('[data-field="sleeping"]');
+      const sleepMins = sleepInput ? App.timeToMinutes(sleepInput.value) : 0;
+      if (sleepMins > 0) {
+        msDays++;
+        msTotalMinutes += sleepMins;
+      }
+    }
+
+    const mqAvgAyah = mqTotalDays > 0 ? Math.round(mqAvgAyahSum / mqTotalDays) : 0;
+    const mhAvg = mhTotalDays > 0 ? Math.round(mhAvgSum / mhTotalDays) : 0;
+    const maAvgHours = maTotalDays > 0 ? parseFloat((maTotalMinutes / maTotalDays / 60).toFixed(1)) : 0;
+    const mdAvgHours = mdDay > 0 ? parseFloat((mdTotalMinutes / mdDay / 60).toFixed(1)) : 0;
+    const moAvgHours = moTotalDays > 0 ? parseFloat((moTotalMinutes / moTotalDays / 60).toFixed(1)) : 0;
+    const msAvgHours = msDays > 0 ? parseFloat((msTotalMinutes / msDays / 60).toFixed(1)) : 0;
+
+    return {
+      mqTotalDays, mqAvgAyah,
+      mhTotalDays, mhAvg,
+      mlTotalPages, mlIslamic, mlOthers,
+      maTotalDays, maAvgHours,
+      mdDay, mdAvgHours,
+      moTotalDays, moAvgHours,
+      msAvgHours,
+      mcMember, mcAssociate, mcWorker, mcSupporter,
+      mcFriends, mcWellWisher, mcMeritorious, mcReader
+    };
+  }
+
+  function showReportModal() {
+    const summary = calculateCurrentSummary();
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    function renderModalRow(label, val) {
+      return `
+        <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
+          <span style="color:var(--text-secondary); font-weight:500;">${label}</span>
+          <span style="color:var(--text-primary); font-weight:600;">${val}</span>
+        </div>
+      `;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'salat-modal-overlay active';
+    overlay.style.zIndex = '9999';
+    overlay.innerHTML = `
+      <div class="salat-modal-card" style="max-width: 450px; max-height: 80vh; overflow-y: auto; text-align: left; padding: var(--space-xl); display: flex; flex-direction: column; border-radius: 12px; background: rgba(17, 24, 39, 0.95); border: 1px solid var(--border-color); backdrop-filter: blur(10px);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-sm);">
+          <div>
+            <h3 style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary);">Monthly Summary Report</h3>
+            <p style="font-size: 0.75rem; color: var(--text-muted);">${monthNames[currentMonth - 1]} ${currentYear}</p>
+          </div>
+          <button type="button" id="summary-modal-close-btn" style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; margin-bottom: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); padding-right: 4px;">
+          <!-- Quran -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>📖</span> The Holy Quran
+            </div>
+            ${renderModalRow('Total Days Telawat/Study', summary.mqTotalDays)}
+            ${renderModalRow('Average Ayah / Day', summary.mqAvgAyah)}
+          </div>
+
+          <!-- Hadith -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>📚</span> Hadith Study
+            </div>
+            ${renderModalRow('Total Days Hadith Study', summary.mhTotalDays)}
+            ${renderModalRow('Daily Average Hadith', summary.mhAvg)}
+          </div>
+
+          <!-- Literature -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>📕</span> Reading Literature
+            </div>
+            ${renderModalRow('Islamic Literature (Pages)', summary.mlIslamic)}
+            ${renderModalRow('General Literature (Pages)', summary.mlOthers)}
+            ${renderModalRow('Total Pages Read', summary.mlTotalPages)}
+          </div>
+
+          <!-- Academic Study -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>🎓</span> Academic Study
+            </div>
+            ${renderModalRow('Total Days Studied', summary.maTotalDays)}
+            ${renderModalRow('Daily Average Hours', `${summary.maAvgHours}h`)}
+          </div>
+
+          <!-- Dawah & Activities -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>⚙️</span> Activities
+            </div>
+            ${renderModalRow('Dawah Work Days', summary.mdDay)}
+            ${renderModalRow('Dawah Average Hours / Day', `${summary.mdAvgHours}h`)}
+            ${renderModalRow('Organizational Work Days', summary.moTotalDays)}
+            ${renderModalRow('Organizational Average Hours / Day', `${summary.moAvgHours}h`)}
+            ${renderModalRow('Average Sleeping Hours', `${summary.msAvgHours}h`)}
+          </div>
+
+          <!-- Personal Contacts -->
+          <div class="glass-card" style="padding: var(--space-md); background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <span>👥</span> Personal Contacts
+            </div>
+            ${renderModalRow('Member (রুকন)', summary.mcMember)}
+            ${renderModalRow('Associate (কর্মী)', summary.mcAssociate)}
+            ${renderModalRow('Worker (সহযোগী)', summary.mcWorker)}
+            ${renderModalRow('Supporter (সমর্থক)', summary.mcSupporter)}
+            ${renderModalRow('Friends (বন্ধু)', summary.mcFriends)}
+            ${renderModalRow('Well Wisher (শুভাকাঙ্ক্ষী)', summary.mcWellWisher)}
+            ${renderModalRow('Meritorious (মেধাবী छात्र)', summary.mcMeritorious)}
+            ${renderModalRow('Reader (পাঠক)', summary.mcReader)}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: var(--space-sm);">
+          <button type="button" id="summary-modal-ok-btn" class="btn btn-primary" style="padding: 8px 24px; font-weight: 600; border-radius: 6px;">Close</button>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(overlay);
+
+    const closeBtn = overlay.querySelector('#summary-modal-close-btn');
+    const okBtn = overlay.querySelector('#summary-modal-ok-btn');
+
+    const dismissModal = () => {
+      overlay.classList.remove('active');
+      setTimeout(() => overlay.remove(), 200);
+    };
+
+    closeBtn.addEventListener('click', dismissModal);
+    okBtn.addEventListener('click', dismissModal);
   }
 
   // (formatDurationInput is no longer needed since we use native dropdown selectors for choosing hours/minutes)
