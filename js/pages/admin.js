@@ -10,7 +10,8 @@ Router.register('admin', async function (container) {
 
   async function renderPage() {
     const user = Auth.getCurrentUser();
-    if (!user || user.role !== 'admin') {
+    const isAdmin = user && (user.isAdmin || user.role === 'admin');
+    if (!user || !isAdmin) {
       container.innerHTML = `
         <div class="glass-card" style="text-align:center; padding:var(--space-2xl) var(--space-lg); margin-top:var(--space-xl);">
           <div style="font-size:3rem; margin-bottom:var(--space-md);">⚠️</div>
@@ -164,6 +165,9 @@ Router.register('admin', async function (container) {
           <h2 style="font-size:1.25rem; font-weight:800; color:var(--text-primary);" data-i18n="admin.title">${I18n.t('admin.title')}</h2>
           <p style="font-size:0.75rem; color:var(--text-muted);" data-i18n="admin.subtitle">${I18n.t('admin.subtitle')}</p>
         </div>
+        <button id="admin-logout-btn" class="btn" style="background: rgba(239, 68, 68, 0.1); color: var(--color-error); border: 1px solid rgba(239, 68, 68, 0.2); padding: 6px 12px; font-size: 0.8125rem; font-weight: 600; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <span>Logout</span>
+        </button>
       </div>
 
       <!-- Search Box -->
@@ -182,6 +186,23 @@ Router.register('admin', async function (container) {
   }
 
   function wireEvents() {
+    // Logout button click
+    const logoutBtn = container.querySelector('#admin-logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async () => {
+        if (confirm("Are you sure you want to log out?")) {
+          try {
+            await Auth.logout();
+            App.showToast("Logged out successfully", "success");
+            Router.navigate('login');
+          } catch (e) {
+            console.error(e);
+            App.showToast("Failed to log out", "error");
+          }
+        }
+      });
+    }
+
     // Search input
     const searchInput = container.querySelector('#admin-search-input');
     if (searchInput) {

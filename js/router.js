@@ -44,18 +44,22 @@ const Router = (() => {
         page = 'login';
       }
     } else {
-      if (page === 'login') {
-        page = 'home';
-      } else if (page === 'supervisor') {
-        // Only supervisors or admins can view supervisor review page
-        const isSuper = user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin';
-        if (!isSuper) {
-          page = 'home';
+      const isAdmin = user.isAdmin || user.role === 'admin';
+      if (isAdmin) {
+        if (page !== 'admin') {
+          page = 'admin';
         }
-      } else if (page === 'admin') {
-        // Only admins can view admin page
-        const isAdmin = user.isAdmin || user.role === 'admin';
-        if (!isAdmin) {
+      } else {
+        if (page === 'login') {
+          page = 'home';
+        } else if (page === 'supervisor') {
+          // Only supervisors can view supervisor review page
+          const isSuper = user.isSupervisor || user.role === 'supervisor';
+          if (!isSuper) {
+            page = 'home';
+          }
+        } else if (page === 'admin') {
+          // Non-admins cannot view admin page
           page = 'home';
         }
       }
@@ -151,8 +155,9 @@ const Router = (() => {
 
     // Show back button for sub-pages (not showing back btn for main dashboard links)
     const mainPages = ['home', 'daily-report', 'monthly-plan', 'analytics', 'settings', 'login'];
+    const isAdmin = user && (user.isAdmin || user.role === 'admin');
     if (backBtn) {
-      backBtn.style.display = mainPages.includes(currentPage) ? 'none' : '';
+      backBtn.style.display = (mainPages.includes(currentPage) || isAdmin) ? 'none' : '';
     }
     if (helpBtn) {
       helpBtn.style.display = currentPage === 'daily-report' ? '' : 'none';
