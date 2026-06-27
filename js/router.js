@@ -135,6 +135,9 @@ const Router = (() => {
     const supervisorBtn = document.getElementById('header-supervisor-btn');
     const adminBtn = document.getElementById('header-admin-btn');
     
+    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+    const isAdmin = user && (user.isAdmin || user.role === 'admin');
+    
     const pageTitles = {
       'home': 'header.title',
       'daily-report': 'daily.title',
@@ -155,7 +158,6 @@ const Router = (() => {
 
     // Show back button for sub-pages (not showing back btn for main dashboard links)
     const mainPages = ['home', 'daily-report', 'monthly-plan', 'analytics', 'settings', 'login'];
-    const isAdmin = user && (user.isAdmin || user.role === 'admin');
     if (backBtn) {
       backBtn.style.display = (mainPages.includes(currentPage) || isAdmin) ? 'none' : '';
     }
@@ -163,13 +165,11 @@ const Router = (() => {
       helpBtn.style.display = currentPage === 'daily-report' ? '' : 'none';
     }
 
-    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
     if (supervisorBtn) {
       const isSuper = user && (user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin');
       supervisorBtn.style.display = (currentPage === 'home' && user && isSuper) ? '' : 'none';
     }
     if (adminBtn) {
-      const isAdmin = user && (user.isAdmin || user.role === 'admin');
       adminBtn.style.display = (currentPage === 'home' && user && isAdmin) ? '' : 'none';
     }
   }
