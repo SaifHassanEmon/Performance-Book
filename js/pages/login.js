@@ -21,8 +21,26 @@ Router.register('login', async function (container) {
           <!-- Auth Form -->
           <form id="auth-form" onsubmit="return false;">
             
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="auth-email" class="form-input" placeholder="name@domain.com" required>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group" id="auth-password-group" style="margin-bottom: var(--space-lg);">
+              <label class="form-label">Password</label>
+              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
+            </div>
+
             <!-- Register Only Fields -->
             <div id="register-fields" style="display: none;">
+              <!-- Confirm Password -->
+              <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
+              </div>
+
               <!-- Name -->
               <div class="form-group">
                 <label class="form-label" data-i18n="yearly.name">${I18n.t('yearly.name')}</label>
@@ -55,24 +73,6 @@ Router.register('login', async function (container) {
                   <option value="AB-" style="background-color: #1f2937; color: var(--text-primary);">AB-</option>
                 </select>
               </div>
-
-              <!-- Confirm Password -->
-              <div class="form-group">
-                <label class="form-label">Confirm Password</label>
-                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
-              </div>
-            </div>
-
-            <!-- Email -->
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" id="auth-email" class="form-input" placeholder="name@domain.com" required>
-            </div>
-
-            <!-- Password -->
-            <div class="form-group" style="margin-bottom: var(--space-lg);">
-              <label class="form-label">Password</label>
-              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
             </div>
 
             <!-- Submit Button -->
@@ -128,12 +128,14 @@ Router.register('login', async function (container) {
           submitBtn.textContent = 'Sign Up';
           toggleText.textContent = 'Already have an account?';
           toggleBtn.textContent = 'Login';
+          container.querySelector('#auth-password-group').style.marginBottom = 'var(--space-md)';
         } else {
           registerFields.style.display = 'none';
           subtitle.textContent = 'Welcome back! Please login to your account.';
           submitBtn.textContent = 'Login';
           toggleText.textContent = "Don't have an account?";
           toggleBtn.textContent = 'Sign Up';
+          container.querySelector('#auth-password-group').style.marginBottom = 'var(--space-lg)';
         }
       });
     }
@@ -199,6 +201,7 @@ Router.register('login', async function (container) {
             submitBtn.textContent = 'Login';
             toggleText.textContent = "Don't have an account?";
             toggleBtn.textContent = 'Sign Up';
+            container.querySelector('#auth-password-group').style.marginBottom = 'var(--space-lg)';
             
             container.querySelector('#auth-name').value = '';
             container.querySelector('#auth-mobile').value = '';
