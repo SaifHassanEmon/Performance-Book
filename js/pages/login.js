@@ -21,26 +21,8 @@ Router.register('login', async function (container) {
           <!-- Auth Form -->
           <form id="auth-form" onsubmit="return false;">
             
-            <!-- Email -->
-            <div class="form-group">
-              <label class="form-label">Email</label>
-              <input type="email" id="auth-email" class="form-input" placeholder="name@domain.com" required>
-            </div>
-
-            <!-- Password -->
-            <div class="form-group" id="auth-password-group" style="margin-bottom: var(--space-lg);">
-              <label class="form-label">Password</label>
-              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
-            </div>
-
-            <!-- Register Only Fields -->
-            <div id="register-fields" style="display: none;">
-              <!-- Confirm Password -->
-              <div class="form-group">
-                <label class="form-label">Confirm Password</label>
-                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
-              </div>
-
+            <!-- Register Top Fields -->
+            <div id="register-fields-top" style="display: none;">
               <!-- Name -->
               <div class="form-group">
                 <label class="form-label" data-i18n="yearly.name">${I18n.t('yearly.name')}</label>
@@ -72,6 +54,27 @@ Router.register('login', async function (container) {
                   <option value="AB+" style="background-color: #1f2937; color: var(--text-primary);">AB+</option>
                   <option value="AB-" style="background-color: #1f2937; color: var(--text-primary);">AB-</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" id="auth-email" class="form-input" placeholder="name@domain.com" required>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group" id="auth-password-group" style="margin-bottom: var(--space-lg);">
+              <label class="form-label">Password</label>
+              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <!-- Register Bottom Fields -->
+            <div id="register-fields-bottom" style="display: none;">
+              <!-- Confirm Password -->
+              <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
               </div>
             </div>
 
@@ -110,7 +113,8 @@ Router.register('login', async function (container) {
 
   function wireEvents() {
     const form = container.querySelector('#auth-form');
-    const registerFields = container.querySelector('#register-fields');
+    const registerFieldsTop = container.querySelector('#register-fields-top');
+    const registerFieldsBottom = container.querySelector('#register-fields-bottom');
     const subtitle = container.querySelector('#auth-subtitle');
     const submitBtn = container.querySelector('#auth-submit-btn');
     const toggleText = container.querySelector('#toggle-text');
@@ -123,14 +127,16 @@ Router.register('login', async function (container) {
         isRegisterView = !isRegisterView;
         
         if (isRegisterView) {
-          registerFields.style.display = 'block';
+          registerFieldsTop.style.display = 'block';
+          registerFieldsBottom.style.display = 'block';
           subtitle.textContent = 'Create your account to start tracking.';
           submitBtn.textContent = 'Sign Up';
           toggleText.textContent = 'Already have an account?';
           toggleBtn.textContent = 'Login';
           container.querySelector('#auth-password-group').style.marginBottom = 'var(--space-md)';
         } else {
-          registerFields.style.display = 'none';
+          registerFieldsTop.style.display = 'none';
+          registerFieldsBottom.style.display = 'none';
           subtitle.textContent = 'Welcome back! Please login to your account.';
           submitBtn.textContent = 'Login';
           toggleText.textContent = "Don't have an account?";
@@ -196,7 +202,8 @@ Router.register('login', async function (container) {
             
             // Switch back to Login view
             isRegisterView = false;
-            registerFields.style.display = 'none';
+            registerFieldsTop.style.display = 'none';
+            registerFieldsBottom.style.display = 'none';
             subtitle.textContent = 'Welcome back! Please login to your account.';
             submitBtn.textContent = 'Login';
             toggleText.textContent = "Don't have an account?";
