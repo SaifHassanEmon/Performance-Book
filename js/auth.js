@@ -230,6 +230,7 @@ const Auth = (() => {
           createdAt: new Date().toISOString(),
           mobile: '',
           university: '',
+          bloodGroup: '',
           sakha: '',
           thana: '',
           uposakha: '',
@@ -264,6 +265,7 @@ const Auth = (() => {
           createdAt: new Date().toISOString(),
           mobile: '',
           university: '',
+          bloodGroup: '',
           sakha: '',
           thana: '',
           uposakha: '',
@@ -299,9 +301,10 @@ const Auth = (() => {
         createdAt: new Date().toISOString(),
         mobile: additionalData.mobile || '',
         university: additionalData.university || '',
-        sakha: additionalData.sakha || '',
-        thana: additionalData.thana || '',
-        uposakha: additionalData.uposakha || '',
+        bloodGroup: additionalData.bloodGroup || '',
+        sakha: '',
+        thana: '',
+        uposakha: '',
         supervisedUposakhas: []
       };
       await dbFirestore.collection('users').doc(cred.user.uid).set(userProfile);
@@ -329,9 +332,10 @@ const Auth = (() => {
         createdAt: new Date().toISOString(),
         mobile: additionalData.mobile || '',
         university: additionalData.university || '',
-        sakha: additionalData.sakha || '',
-        thana: additionalData.thana || '',
-        uposakha: additionalData.uposakha || '',
+        bloodGroup: additionalData.bloodGroup || '',
+        sakha: '',
+        thana: '',
+        uposakha: '',
         supervisedUposakhas: []
       };
       

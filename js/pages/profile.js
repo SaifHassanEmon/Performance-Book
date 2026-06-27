@@ -65,23 +65,35 @@ Router.register('profile', async function (container) {
             <span style="color:var(--text-primary); font-weight:600;">${user.university || '–'}</span>
           </div>
 
+          <!-- Blood Group -->
+          <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
+            <span style="color:var(--text-secondary);">Blood Group</span>
+            <span style="color:var(--color-error); font-weight:700;">${user.bloodGroup || '–'}</span>
+          </div>
+
           <!-- Sakha -->
+          ${user.sakha ? `
           <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
             <span style="color:var(--text-secondary);">Sakha</span>
-            <span style="color:var(--text-primary); font-weight:600;">${user.sakha || '–'}</span>
+            <span style="color:var(--text-primary); font-weight:600;">${user.sakha}</span>
           </div>
+          ` : ''}
 
           <!-- Thana -->
+          ${user.thana ? `
           <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
             <span style="color:var(--text-secondary);">Thana</span>
-            <span style="color:var(--text-primary); font-weight:600;">${user.thana || '–'}</span>
+            <span style="color:var(--text-primary); font-weight:600;">${user.thana}</span>
           </div>
+          ` : ''}
 
           <!-- Uposakha -->
+          ${user.uposakha ? `
           <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
             <span style="color:var(--text-secondary);">Uposakha</span>
-            <span style="color:var(--green-400); font-weight:700;">${user.uposakha || '–'}</span>
+            <span style="color:var(--green-400); font-weight:700;">${user.uposakha}</span>
           </div>
+          ` : ''}
 
           <!-- Supervised Uposakhas (if supervisor) -->
           ${user.role === 'supervisor' ? `

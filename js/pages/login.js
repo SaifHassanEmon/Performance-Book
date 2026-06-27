@@ -41,33 +41,25 @@ Router.register('login', async function (container) {
                 <input type="text" id="auth-university" class="form-input" placeholder="University Name">
               </div>
 
-              <!-- Sakha Select -->
+              <!-- Blood Group Select -->
               <div class="form-group">
-                <label class="form-label">Sakha</label>
-                <select id="auth-sakha" class="form-input" style="color: var(--text-primary); cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
-                  <option value="Private University" style="background-color: #1f2937; color: var(--text-primary);">Private University</option>
-                  <option value="West" style="background-color: #1f2937; color: var(--text-primary);">West</option>
+                <label class="form-label">Blood Group</label>
+                <select id="auth-blood" class="form-input" style="color: var(--text-primary); cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
+                  <option value="A+" style="background-color: #1f2937; color: var(--text-primary);">A+</option>
+                  <option value="A-" style="background-color: #1f2937; color: var(--text-primary);">A-</option>
+                  <option value="B+" style="background-color: #1f2937; color: var(--text-primary);">B+</option>
+                  <option value="B-" style="background-color: #1f2937; color: var(--text-primary);">B-</option>
+                  <option value="O+" style="background-color: #1f2937; color: var(--text-primary);">O+</option>
+                  <option value="O-" style="background-color: #1f2937; color: var(--text-primary);">O-</option>
+                  <option value="AB+" style="background-color: #1f2937; color: var(--text-primary);">AB+</option>
+                  <option value="AB-" style="background-color: #1f2937; color: var(--text-primary);">AB-</option>
                 </select>
               </div>
 
-              <!-- Thana Select -->
+              <!-- Confirm Password -->
               <div class="form-group">
-                <label class="form-label">Thana</label>
-                <select id="auth-thana" class="form-input" style="color: var(--text-primary); cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
-                  <option value="DCS" style="background-color: #1f2937; color: var(--text-primary);">DCS</option>
-                  <option value="Software" style="background-color: #1f2937; color: var(--text-primary);">Software</option>
-                  <option value="Engineering" style="background-color: #1f2937; color: var(--text-primary);">Engineering</option>
-                </select>
-              </div>
-
-              <!-- Uposakha Select -->
-              <div class="form-group">
-                <label class="form-label">Uposakha</label>
-                <select id="auth-uposakha" class="form-input" style="color: var(--text-primary); cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.15);">
-                  <option value="Safa" style="background-color: #1f2937; color: var(--text-primary);">Safa</option>
-                  <option value="Marwa" style="background-color: #1f2937; color: var(--text-primary);">Marwa</option>
-                  <option value="Jabale Arafa" style="background-color: #1f2937; color: var(--text-primary);">Jabale Arafa</option>
-                </select>
+                <label class="form-label">Confirm Password</label>
+                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
               </div>
             </div>
 
@@ -181,9 +173,8 @@ Router.register('login', async function (container) {
             const name = container.querySelector('#auth-name').value;
             const mobile = container.querySelector('#auth-mobile').value;
             const university = container.querySelector('#auth-university').value;
-            const sakha = container.querySelector('#auth-sakha').value;
-            const thana = container.querySelector('#auth-thana').value;
-            const uposakha = container.querySelector('#auth-uposakha').value;
+            const bloodGroup = container.querySelector('#auth-blood').value;
+            const confirmPassword = container.querySelector('#auth-confirm-password').value;
 
             if (!name) {
               App.showToast('Please enter your name', 'error');
@@ -191,7 +182,13 @@ Router.register('login', async function (container) {
               submitBtn.textContent = 'Sign Up';
               return;
             }
-            const additionalData = { mobile, university, sakha, thana, uposakha };
+            if (password !== confirmPassword) {
+              App.showToast('Passwords do not match', 'error');
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Sign Up';
+              return;
+            }
+            const additionalData = { mobile, university, bloodGroup };
             await Auth.register(email, password, name, additionalData);
             App.showToast('Registration successful! A verification email has been sent.', 'success');
             
@@ -207,6 +204,7 @@ Router.register('login', async function (container) {
             container.querySelector('#auth-mobile').value = '';
             container.querySelector('#auth-university').value = '';
             container.querySelector('#auth-password').value = '';
+            container.querySelector('#auth-confirm-password').value = '';
           } else {
             await Auth.login(email, password);
             App.showToast('Welcome back!', 'success');

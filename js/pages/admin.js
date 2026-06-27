@@ -91,11 +91,41 @@ Router.register('admin', async function (container) {
             </div>
 
             <!-- Profile Info Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: var(--space-xs); padding-top: var(--space-sm); border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-secondary);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: var(--space-xs); padding-top: var(--space-sm); border-top: 1px solid var(--border-color); font-size: 0.75rem; color: var(--text-secondary);">
               <div><strong>University:</strong> ${u.university || '–'}</div>
-              <div><strong>Sakha:</strong> ${u.sakha || '–'}</div>
-              <div><strong>Thana:</strong> ${u.thana || '–'}</div>
-              <div><strong>Uposakha:</strong> <span style="color: var(--green-400); font-weight: 600;">${u.uposakha || '–'}</span></div>
+              <div><strong>Blood Group:</strong> <span style="color: var(--color-error); font-weight: 700;">${u.bloodGroup || '–'}</span></div>
+              
+              <!-- Sakha Select -->
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-weight: bold;">Sakha:</span>
+                <select class="form-input admin-sakha-select" data-uid="${u.uid}" style="width: 110px; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary);">
+                  <option value="" ${!u.sakha ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">–</option>
+                  <option value="Private University" ${u.sakha === 'Private University' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Private University</option>
+                  <option value="West" ${u.sakha === 'West' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">West</option>
+                </select>
+              </div>
+
+              <!-- Thana Select -->
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-weight: bold;">Thana:</span>
+                <select class="form-input admin-thana-select" data-uid="${u.uid}" style="width: 100px; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary);">
+                  <option value="" ${!u.thana ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">–</option>
+                  <option value="DCS" ${u.thana === 'DCS' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">DCS</option>
+                  <option value="Software" ${u.thana === 'Software' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Software</option>
+                  <option value="Engineering" ${u.thana === 'Engineering' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Engineering</option>
+                </select>
+              </div>
+
+              <!-- Uposakha Select -->
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span style="font-weight: bold;">Uposakha:</span>
+                <select class="form-input admin-uposakha-select" data-uid="${u.uid}" style="width: 100px; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary);">
+                  <option value="" ${!u.uposakha ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">–</option>
+                  <option value="Safa" ${u.uposakha === 'Safa' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Safa</option>
+                  <option value="Marwa" ${u.uposakha === 'Marwa' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Marwa</option>
+                  <option value="Jabale Arafa" ${u.uposakha === 'Jabale Arafa' ? 'selected' : ''} style="background-color: #1f2937; color: var(--text-primary);">Jabale Arafa</option>
+                </select>
+              </div>
             </div>
 
             <!-- Supervised Uposakhas selection (rendered only if role is supervisor) -->
@@ -220,6 +250,60 @@ Router.register('admin', async function (container) {
           console.error(err);
           App.showToast("Failed to update Uposakhas", "error");
           check.checked = !check.checked; // Revert
+        }
+      });
+    });
+
+    // Sakha selection
+    container.querySelectorAll('.admin-sakha-select').forEach(select => {
+      select.addEventListener('change', async () => {
+        const uid = select.getAttribute('data-uid');
+        const val = select.value;
+        App.showToast("Updating Sakha...", "info");
+        try {
+          await Sync.adminUpdateUser(uid, { sakha: val });
+          const target = usersList.find(u => u.uid === uid);
+          if (target) target.sakha = val;
+          App.showToast("Sakha updated successfully!", "success");
+        } catch (err) {
+          console.error(err);
+          App.showToast("Failed to update Sakha", "error");
+        }
+      });
+    });
+
+    // Thana selection
+    container.querySelectorAll('.admin-thana-select').forEach(select => {
+      select.addEventListener('change', async () => {
+        const uid = select.getAttribute('data-uid');
+        const val = select.value;
+        App.showToast("Updating Thana...", "info");
+        try {
+          await Sync.adminUpdateUser(uid, { thana: val });
+          const target = usersList.find(u => u.uid === uid);
+          if (target) target.thana = val;
+          App.showToast("Thana updated successfully!", "success");
+        } catch (err) {
+          console.error(err);
+          App.showToast("Failed to update Thana", "error");
+        }
+      });
+    });
+
+    // Uposakha selection
+    container.querySelectorAll('.admin-uposakha-select').forEach(select => {
+      select.addEventListener('change', async () => {
+        const uid = select.getAttribute('data-uid');
+        const val = select.value;
+        App.showToast("Updating Uposakha...", "info");
+        try {
+          await Sync.adminUpdateUser(uid, { uposakha: val });
+          const target = usersList.find(u => u.uid === uid);
+          if (target) target.uposakha = val;
+          App.showToast("Uposakha updated successfully!", "success");
+        } catch (err) {
+          console.error(err);
+          App.showToast("Failed to update Uposakha", "error");
         }
       });
     });
