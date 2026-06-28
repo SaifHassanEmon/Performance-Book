@@ -77,39 +77,83 @@ const Auth = (() => {
         triggerCallbacks();
       });
     } else {
-      // Initialize default mock users if none exist in localStorage
+      // Initialize default mock users if none exist or merge missing seeds in localStorage
       let users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
-      if (users.length === 0) {
-        users = [
-          {
-            uid: 'mock_uid_supervisor',
-            email: 'supervisor@icsbook.info',
-            password: 'supervisor123',
-            displayName: 'Saif Hassan Emon',
-            role: 'supervisor',
-            mobile: '01711223344',
-            university: 'Daffodil International University',
-            sakha: 'Private University',
-            thana: 'Software',
-            uposakha: 'Marwa',
-            supervisedUposakhas: ['Marwa'],
-            createdAt: new Date().toISOString()
-          },
-          {
-            uid: 'mock_uid_member',
-            email: 'member@icsbook.info',
-            password: 'member123',
-            displayName: 'Test Member',
-            role: 'member',
-            mobile: '01999887766',
-            university: 'Dhaka University',
-            sakha: 'West',
-            thana: 'DCS',
-            uposakha: 'Safa',
-            supervisedUposakhas: [],
-            createdAt: new Date().toISOString()
+      
+      const seedUsers = [
+        {
+          uid: 'mock_uid_supervisor',
+          email: 'supervisor@icsbook.info',
+          password: 'supervisor123',
+          displayName: 'Saif Hassan Emon',
+          role: 'supervisor',
+          mobile: '01711223344',
+          university: 'Daffodil International University',
+          sakha: 'Private University',
+          thana: 'Software',
+          uposakha: 'Marwa',
+          supervisedUposakhas: ['Marwa', 'Safa', 'Jabale Arafa'],
+          createdAt: new Date().toISOString()
+        },
+        {
+          uid: 'mock_uid_safa_member',
+          email: 'safa_member@icsbook.info',
+          password: 'member123',
+          displayName: 'Safa Member One',
+          role: 'member',
+          mobile: '01999887766',
+          university: 'Dhaka University',
+          sakha: 'West',
+          thana: 'DCS',
+          uposakha: 'Safa',
+          supervisedUposakhas: [],
+          createdAt: new Date().toISOString()
+        },
+        {
+          uid: 'mock_uid_marwa_member',
+          email: 'marwa_member@icsbook.info',
+          password: 'member123',
+          displayName: 'Marwa Member One',
+          role: 'member',
+          mobile: '01888776655',
+          university: 'Daffodil International University',
+          sakha: 'Private University',
+          thana: 'Software',
+          uposakha: 'Marwa',
+          supervisedUposakhas: [],
+          createdAt: new Date().toISOString()
+        },
+        {
+          uid: 'mock_uid_arafa_member',
+          email: 'arafa_member@icsbook.info',
+          password: 'member123',
+          displayName: 'Jabale Arafa Member One',
+          role: 'member',
+          mobile: '01555443322',
+          university: 'Chittagong University',
+          sakha: 'East',
+          thana: 'Engineering',
+          uposakha: 'Jabale Arafa',
+          supervisedUposakhas: [],
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      let updated = false;
+      seedUsers.forEach(su => {
+        const existingIdx = users.findIndex(u => u.uid === su.uid);
+        if (existingIdx === -1) {
+          users.push(su);
+          updated = true;
+        } else {
+          if (su.uid === 'mock_uid_supervisor' && (!users[existingIdx].supervisedUposakhas || users[existingIdx].supervisedUposakhas.length < 3)) {
+            users[existingIdx].supervisedUposakhas = su.supervisedUposakhas;
+            updated = true;
           }
-        ];
+        }
+      });
+
+      if (updated || users.length === 0) {
         localStorage.setItem('perfbook_mock_users', JSON.stringify(users));
       }
 
