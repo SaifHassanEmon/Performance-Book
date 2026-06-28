@@ -9,12 +9,12 @@ let dbFirestore = null;
 
 // User can replace these placeholder values with their real Firebase project details.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCnScI6UqBYwwuLkk90Ev0ZRcxu6c90ijQ",
+  authDomain: "performance-book.firebaseapp.com",
+  projectId: "performance-book",
+  storageBucket: "performance-book.firebasestorage.app",
+  messagingSenderId: "849707090155",
+  appId: "1:849707090155:web:2f5cef4b22c29324a67eae"
 };
 
 // Check if the user has plugged in their real credentials
