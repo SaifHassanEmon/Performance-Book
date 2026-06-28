@@ -9,7 +9,7 @@ let dbFirestore = null;
 
 // User can replace these placeholder values with their real Firebase project details.
 const firebaseConfig = {
-  apiKey: "AIzaSyCnScI6UqBYwwuLkk90Ev0ZRcxu6c90ijQ",
+  apiKey: "AIzaSyCnScI6UqBYwwuLkk9OEv0ZRcxu6c9OijQ",
   authDomain: "performance-book.firebaseapp.com",
   projectId: "performance-book",
   storageBucket: "performance-book.firebasestorage.app",
