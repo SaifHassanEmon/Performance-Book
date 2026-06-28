@@ -233,7 +233,11 @@ Router.register('login', async function (container) {
             }
             const additionalData = { mobile, university, bloodGroup };
             await Auth.register(email, password, name, additionalData);
-            App.showToast('Registration successful! A verification email has been sent.', 'success');
+            if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable) {
+              App.showToast('Registration successful! A verification email has been sent.', 'success');
+            } else {
+              App.showToast('Registration successful! (Offline Mock Mode: No email sent)', 'success');
+            }
             
             // Switch back to Login view
             isRegisterView = false;
