@@ -95,6 +95,12 @@ Router.register('login', async function (container) {
                 Continue with Google
               </button>
             </div>
+            
+            <!-- Resend verification link container -->
+            <div id="resend-verification-container" style="display: none; text-align: center; margin-top: var(--space-md); font-size: 0.75rem;">
+              <span style="color: var(--text-muted);">Didn't get the email?</span>
+              <button type="button" id="auth-resend-btn" style="color: var(--color-primary); font-weight: 600; margin-left: 4px; background: none; border: none; cursor: pointer; text-decoration: underline; font-size: 0.75rem;">Resend Verification Link</button>
+            </div>
           </form>
 
           <!-- Toggle Link -->
@@ -165,6 +171,35 @@ Router.register('login', async function (container) {
       });
     }
 
+    // Resend verification link click
+    const resendBtn = container.querySelector('#auth-resend-btn');
+    const resendContainer = container.querySelector('#resend-verification-container');
+    if (resendBtn) {
+      resendBtn.addEventListener('click', async () => {
+        const email = container.querySelector('#auth-email').value;
+        const password = container.querySelector('#auth-password').value;
+        if (!email || !password) {
+          App.showToast('Please enter your email and password first to resend the verification link.', 'error');
+          return;
+        }
+        resendBtn.disabled = true;
+        resendBtn.textContent = 'Sending...';
+        try {
+          await Auth.resendVerification(email, password);
+          App.showToast('Verification email resent successfully! Please check your inbox.', 'success');
+          if (resendContainer) {
+            resendContainer.style.display = 'none';
+          }
+        } catch (err) {
+          console.error(err);
+          App.showToast(err.message || 'Failed to resend verification email', 'error');
+        } finally {
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Verification Link';
+        }
+      });
+    }
+
     // Form submission
     if (form) {
       form.addEventListener('submit', async (e) => {
@@ -223,6 +258,12 @@ Router.register('login', async function (container) {
         } catch (error) {
           console.error(error);
           App.showToast(error.message || 'Authentication failed', 'error');
+          if (!isRegisterView && error.message && error.message.includes("not verified")) {
+            const resendContainer = container.querySelector('#resend-verification-container');
+            if (resendContainer) {
+              resendContainer.style.display = 'block';
+            }
+          }
         } finally {
           submitBtn.disabled = false;
           submitBtn.textContent = isRegisterView ? 'Sign Up' : 'Login';

@@ -373,6 +373,17 @@ const Auth = (() => {
     }
   }
 
+  // ---- Resend Email Verification ----
+  async function resendVerification(email, password) {
+    if (FirebaseAvailable) {
+      const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+      await cred.user.sendEmailVerification();
+      await firebase.auth().signOut();
+    } else {
+      throw new Error("Email verification is already auto-completed in offline mock mode.");
+    }
+  }
+
   // ---- Logout ----
   async function logout() {
     localStorage.removeItem('perfbook_supervisor_session');
@@ -393,6 +404,7 @@ const Auth = (() => {
     login,
     loginWithGoogle,
     register,
+    resendVerification,
     logout
   };
 })();
