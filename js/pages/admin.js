@@ -408,7 +408,11 @@ Router.register('admin', async function (container) {
         const uid = btn.getAttribute('data-uid');
         const name = btn.getAttribute('data-name');
         
-        if (confirm(`Are you sure you want to permanently remove "${name}"? This action cannot be undone.`)) {
+        const confirmMsg = `Are you sure you want to permanently remove "${name}"?\n\n` +
+          `This will delete all of their profile details, daily reports, and monthly reports from the database.\n\n` +
+          `IMPORTANT: Due to Firebase security restrictions, you must also delete this user's email address from your Firebase Console (under the 'Authentication' tab) to allow them to register again with this email.`;
+
+        if (confirm(confirmMsg)) {
           App.showToast("Removing user...", "info");
           try {
             await Sync.adminDeleteUser(uid);
