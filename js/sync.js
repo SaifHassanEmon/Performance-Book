@@ -608,6 +608,7 @@ const Sync = (() => {
       console.error("Error during data sync down:", err);
       return false;
     }
+  }
   async function uploadDailyReports(reports) {
     if (!FirebaseAvailable) return;
     const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
