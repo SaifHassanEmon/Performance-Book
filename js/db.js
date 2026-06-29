@@ -4,20 +4,43 @@
    ============================================================ */
 
 const DB = (() => {
-  let db;
+  let _dbInstance = null;
+  let _dbUid = null;
 
-  function init() {
-    db = new Dexie('PerformanceBookDB');
-    
-    db.version(2).stores({
+  function getDb() {
+    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+    const uid = user ? user.uid : 'default';
+    if (_dbInstance && _dbUid === uid) {
+      return _dbInstance;
+    }
+    if (_dbInstance) {
+      try { _dbInstance.close(); } catch (e) {}
+    }
+    _dbUid = uid;
+    _dbInstance = new Dexie('PerformanceBookDB_' + uid);
+    _dbInstance.version(2).stores({
       yearly_plans: '++id, year, createdAt',
       monthly_plans: '++id, year, month, createdAt, submitted',
       daily_reports: '++id, [year+month+day], year, month, day, createdAt',
       settings: 'key',
       streaks: '++id, type, date',
     });
+    return _dbInstance;
+  }
 
-    return db.open();
+  const db = new Proxy({}, {
+    get: (target, prop) => {
+      const activeDb = getDb();
+      const value = activeDb[prop];
+      if (typeof value === 'function') {
+        return value.bind(activeDb);
+      }
+      return value;
+    }
+  });
+
+  function init() {
+    return getDb().open();
   }
 
   // ---- Yearly Plans ----
