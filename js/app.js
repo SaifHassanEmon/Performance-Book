@@ -96,11 +96,63 @@ const App = (() => {
       navigator.serviceWorker.register('./sw.js')
         .then(reg => {
           console.log('SW registered:', reg.scope);
+
+          // Check if there is an update waiting or a new worker installs
+          if (reg.waiting) {
+            showUpdateToast();
+          }
+
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            if (installingWorker) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    showUpdateToast();
+                  }
+                }
+              };
+            }
+          };
         })
         .catch(err => {
           console.warn('SW registration failed:', err);
         });
     }
+  }
+
+  function showUpdateToast() {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    // Check if update toast is already showing
+    if (document.getElementById('pwa-update-toast')) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'pwa-update-toast';
+    toast.className = 'toast toast-info';
+    toast.style.cursor = 'pointer';
+    toast.style.background = 'var(--color-primary)';
+    toast.style.color = '#fff';
+    toast.style.border = '1px solid rgba(255,255,255,0.2)';
+    toast.style.fontWeight = '600';
+    toast.style.boxShadow = '0 8px 30px rgba(0,0,0,0.3)';
+
+    const isBn = typeof I18n !== 'undefined' && I18n.getLang() === 'bn';
+    const message = isBn
+      ? 'নতুন সংস্করণ উপলব্ধ! আপডেট করতে এখানে ক্লিক করুন।'
+      : 'New version available! Click here to update now.';
+
+    toast.innerHTML = `
+      <span style="font-size:1.1rem;font-weight:700;margin-right:8px;">🔄</span>
+      <span>${message}</span>
+    `;
+
+    toast.addEventListener('click', () => {
+      window.location.reload();
+    });
+
+    container.appendChild(toast);
   }
 
   // ---- Toast Notifications ----
