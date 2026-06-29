@@ -39,6 +39,7 @@ Router.register('admin', async function (container) {
   }
 
   function renderContent() {
+    const user = Auth.getCurrentUser();
     // Filter users based on search
     const filteredUsers = usersList.filter(u => {
       const q = searchQuery.toLowerCase();
