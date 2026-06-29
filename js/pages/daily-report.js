@@ -1015,5 +1015,14 @@ Router.register('daily-report', async function (container) {
 
   // (formatDurationInput is no longer needed since we use native dropdown selectors for choosing hours/minutes)
 
+  // Sync down latest data from Firestore before rendering so grid is always up-to-date across devices
+  if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable && typeof Sync !== 'undefined' && typeof Sync.syncDownData === 'function') {
+    try {
+      await Sync.syncDownData();
+    } catch (err) {
+      console.warn('Daily report page: sync-down before render failed:', err);
+    }
+  }
+
   await renderPage();
 });

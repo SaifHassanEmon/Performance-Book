@@ -47,7 +47,7 @@ const App = (() => {
       }
 
       // Enforce route guards dynamically on auth state change
-      Auth.onAuthStateChanged((user) => {
+      Auth.onAuthStateChanged(async (user) => {
         const page = Router.getCurrentPage();
         if (!user) {
           if (page !== 'login') {
@@ -58,6 +58,23 @@ const App = (() => {
             Router.navigate('home');
           } else {
             Router.navigate(page, { force: true });
+          }
+
+          // Sync down data from Firestore after login so all devices stay in sync
+          if (typeof Sync !== 'undefined' && typeof Sync.syncDownData === 'function') {
+            try {
+              const hasChanges = await Sync.syncDownData();
+              if (hasChanges) {
+                console.log('Synced down new data from Firestore after auth state change.');
+                // Re-render current page to reflect synced data
+                const currentPage = Router.getCurrentPage();
+                if (currentPage && currentPage !== 'login') {
+                  Router.navigate(currentPage, { force: true });
+                }
+              }
+            } catch (err) {
+              console.warn('Background sync-down after login failed:', err);
+            }
           }
         }
       });
@@ -74,11 +91,45 @@ const App = (() => {
       }, 800);
 
       // Online/offline listeners
-      window.addEventListener('online', () => {
+      window.addEventListener('online', async () => {
         showToast(I18n.t('common.online'), 'success');
+        // Sync down data when coming back online
+        if (typeof Sync !== 'undefined' && typeof Sync.syncDownData === 'function') {
+          try {
+            const hasChanges = await Sync.syncDownData();
+            if (hasChanges) {
+              const currentPage = Router.getCurrentPage();
+              if (currentPage && currentPage !== 'login') {
+                Router.navigate(currentPage, { force: true });
+              }
+            }
+          } catch (err) {
+            console.warn('Sync-down on reconnect failed:', err);
+          }
+        }
       });
       window.addEventListener('offline', () => {
         showToast(I18n.t('common.offline'), 'info');
+      });
+
+      // Sync down data when the app tab regains focus (handles switching between devices/tabs)
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+          if (user && typeof Sync !== 'undefined' && typeof Sync.syncDownData === 'function') {
+            try {
+              const hasChanges = await Sync.syncDownData();
+              if (hasChanges) {
+                const currentPage = Router.getCurrentPage();
+                if (currentPage && currentPage !== 'login') {
+                  Router.navigate(currentPage, { force: true });
+                }
+              }
+            } catch (err) {
+              console.warn('Sync-down on visibility change failed:', err);
+            }
+          }
+        }
       });
 
     } catch (err) {

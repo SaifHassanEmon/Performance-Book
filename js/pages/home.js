@@ -282,8 +282,10 @@ Router.register('home', async function (container) {
     Sync.syncDownData().then(hasChanges => {
       if (hasChanges) {
         console.log("New reports synced down from Firestore. Refreshing dashboard...");
-        Router.navigate('home');
+        Router.navigate('home', { force: true });
       }
+    }).catch(err => {
+      console.warn("Home page sync-down failed:", err);
     });
   }
 

@@ -491,15 +491,23 @@ const Sync = (() => {
   }
 
   async function syncDownData() {
-    if (!FirebaseAvailable) return false;
+    if (!FirebaseAvailable) {
+      localStorage.setItem('perfbook_last_sync_status', 'Offline/Mock Mode');
+      localStorage.setItem('perfbook_last_sync_time', new Date().toLocaleString());
+      return false;
+    }
     const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
-    if (!user) return false;
+    if (!user) {
+      localStorage.setItem('perfbook_last_sync_status', 'Not authenticated');
+      localStorage.setItem('perfbook_last_sync_time', new Date().toLocaleString());
+      return false;
+    }
 
     let hasChanges = false;
     
     const TRACKING_FIELDS = [
       'quranS', 'quranT', 'hadithNum', 'litI', 'litG', 'academic',
-      'classT', 'classA', 'salatJamat', 'salatKaja',
+      'classT', 'classA', 'salatJamat', 'salatKaja', 'salatDetails',
       'contactM', 'contactA', 'contactW', 'contactS',
       'contactF', 'contactMS', 'contactWW', 'contactR',
       'dawah', 'orgWork', 'sleeping', 'socialMedia',
@@ -517,11 +525,21 @@ const Sync = (() => {
 
     try {
       console.log("Starting loop-proof data sync down from Firestore...");
+      localStorage.setItem('perfbook_last_sync_status', 'Syncing...');
 
       // 1. Fetch user's daily reports from Firestore
-      const dailySnap = await dbFirestore.collection('daily_reports')
-        .where('uid', '==', user.uid)
-        .get();
+      // Force server fetch to ensure we get the latest data, fall back to cache if offline
+      let dailySnap;
+      try {
+        dailySnap = await dbFirestore.collection('daily_reports')
+          .where('uid', '==', user.uid)
+          .get({ source: 'server' });
+      } catch (serverErr) {
+        console.warn('Server fetch failed, trying cache:', serverErr);
+        dailySnap = await dbFirestore.collection('daily_reports')
+          .where('uid', '==', user.uid)
+          .get({ source: 'cache' });
+      }
 
       if (!dailySnap.empty) {
         const localReports = [];
@@ -530,12 +548,20 @@ const Sync = (() => {
         });
 
         for (const report of localReports) {
+          // Record streak entry for every report from Firestore to keep streaks in sync
+          if (report.year && report.month && report.day) {
+            const dateStr = `${report.year}-${String(report.month).padStart(2, '0')}-${String(report.day).padStart(2, '0')}`;
+            await DB.recordEntry(dateStr);
+          }
+
           const existing = await DB.getDailyReport(parseInt(report.year, 10), parseInt(report.month, 10), parseInt(report.day, 10));
           if (existing) {
             let diff = false;
             for (const field of TRACKING_FIELDS) {
-              const val1 = String(report[field] ?? '');
-              const val2 = String(existing[field] ?? '');
+              const v1 = report[field] ?? '';
+              const v2 = existing[field] ?? '';
+              const val1 = typeof v1 === 'object' ? JSON.stringify(v1) : String(v1);
+              const val2 = typeof v2 === 'object' ? JSON.stringify(v2) : String(v2);
               if (val1 !== val2) {
                 diff = true;
                 break;
@@ -548,22 +574,41 @@ const Sync = (() => {
                   updatePayload[field] = report[field];
                 }
               });
-              await db.daily_reports.update(existing.id, updatePayload);
+              await DB.saveDailyReport(
+                parseInt(report.year, 10),
+                parseInt(report.month, 10),
+                parseInt(report.day, 10),
+                { ...existing, ...updatePayload }
+              );
               hasChanges = true;
             }
           } else {
             const cleanReport = { ...report };
             delete cleanReport.id;
-            await db.daily_reports.add(cleanReport);
+            delete cleanReport.uid;
+            await DB.saveDailyReport(
+              parseInt(report.year, 10),
+              parseInt(report.month, 10),
+              parseInt(report.day, 10),
+              cleanReport
+            );
             hasChanges = true;
           }
         }
       }
 
       // 2. Fetch user's monthly plans/reports from Firestore
-      const monthlySnap = await dbFirestore.collection('monthly_reports')
-        .where('uid', '==', user.uid)
-        .get();
+      let monthlySnap;
+      try {
+        monthlySnap = await dbFirestore.collection('monthly_reports')
+          .where('uid', '==', user.uid)
+          .get({ source: 'server' });
+      } catch (serverErr) {
+        console.warn('Server fetch failed for monthly, trying cache:', serverErr);
+        monthlySnap = await dbFirestore.collection('monthly_reports')
+          .where('uid', '==', user.uid)
+          .get({ source: 'cache' });
+      }
 
       if (!monthlySnap.empty) {
         const localMonthly = [];
@@ -590,22 +635,30 @@ const Sync = (() => {
                   updatePayload[field] = plan[field];
                 }
               });
-              await db.monthly_plans.update(existing.id, updatePayload);
+              await DB.saveMonthlyPlan({
+                ...existing,
+                ...updatePayload
+              });
               hasChanges = true;
             }
           } else {
             const cleanPlan = { ...plan };
             delete cleanPlan.id;
-            await db.monthly_plans.add(cleanPlan);
+            delete cleanPlan.uid;
+            await DB.saveMonthlyPlan(cleanPlan);
             hasChanges = true;
           }
         }
       }
 
       console.log("Data sync down completed. Changes merged:", hasChanges);
+      localStorage.setItem('perfbook_last_sync_status', 'Success');
+      localStorage.setItem('perfbook_last_sync_time', new Date().toLocaleString());
       return hasChanges;
     } catch (err) {
       console.error("Error during data sync down:", err);
+      localStorage.setItem('perfbook_last_sync_status', 'Failed: ' + (err.message || err));
+      localStorage.setItem('perfbook_last_sync_time', new Date().toLocaleString());
       return false;
     }
   }

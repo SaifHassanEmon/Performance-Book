@@ -1,4 +1,4 @@
-const CACHE_NAME = 'perfbook-v16';
+const CACHE_NAME = 'perfbook-v17';
 const STATIC_ASSETS = [
   './',
   './index.html',
