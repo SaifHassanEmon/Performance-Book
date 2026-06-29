@@ -71,7 +71,14 @@ Router.register('admin', async function (container) {
             <!-- User Basic Info Header -->
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
               <div>
-                <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--green-400);">${u.displayName || 'Unnamed User'}</h4>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--green-400);">${u.displayName || 'Unnamed User'}</h4>
+                  ${u.uid !== 'hardcoded_admin_uid' && u.uid !== user.uid ? `
+                    <button class="admin-remove-user-btn" data-uid="${u.uid}" data-name="${u.displayName || u.email}" style="background: rgba(239, 68, 68, 0.1); color: var(--color-error); border: 1px solid rgba(239, 68, 68, 0.25); padding: 3px 8px; font-size: 0.65rem; font-weight: 700; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">
+                      Remove
+                    </button>
+                  ` : ''}
+                </div>
                 <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">${u.email}</p>
                 ${u.mobile ? `<p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 1px;">📞 ${u.mobile}</p>` : ''}
               </div>
@@ -390,6 +397,27 @@ Router.register('admin', async function (container) {
         } catch (err) {
           console.error(err);
           App.showToast("Failed to update Uposakha", "error");
+        }
+      });
+    });
+
+    // Remove User button click
+    container.querySelectorAll('.admin-remove-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const uid = btn.getAttribute('data-uid');
+        const name = btn.getAttribute('data-name');
+        
+        if (confirm(`Are you sure you want to permanently remove "${name}"? This action cannot be undone.`)) {
+          App.showToast("Removing user...", "info");
+          try {
+            await Sync.adminDeleteUser(uid);
+            usersList = usersList.filter(u => u.uid !== uid);
+            App.showToast(`User "${name}" removed successfully.`, "success");
+            renderContent();
+          } catch (err) {
+            console.error(err);
+            App.showToast("Failed to remove user", "error");
+          }
         }
       });
     });

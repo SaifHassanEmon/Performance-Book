@@ -54,13 +54,10 @@ const Auth = (() => {
                 ...profile
               };
             } else {
-              // Fallback if document not created yet
-              currentUser = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName || 'User',
-                role: 'member'
-              };
+              // The user profile has been deleted by an admin!
+              console.warn("User profile not found in Firestore. Signing out deleted user.");
+              await firebase.auth().signOut();
+              currentUser = null;
             }
           } catch (e) {
             console.error("Error fetching Firestore user profile:", e);
@@ -98,7 +95,9 @@ const Auth = (() => {
             delete currentUser.password;
             localStorage.setItem('perfbook_mock_session', JSON.stringify(currentUser));
           } else {
-            currentUser = parsed;
+            // User was deleted! Clear session
+            currentUser = null;
+            localStorage.removeItem('perfbook_mock_session');
           }
         } catch {
           currentUser = null;
@@ -259,7 +258,19 @@ const Auth = (() => {
 
   // ---- Register ----
   async function register(email, password, displayName, additionalData = {}) {
+    const mobile = additionalData.mobile || '';
     if (FirebaseAvailable) {
+      // Check if phone number already exists
+      if (mobile) {
+        const querySnapshot = await dbFirestore.collection('users')
+          .where('mobile', '==', mobile)
+          .limit(1)
+          .get();
+        if (!querySnapshot.empty) {
+          throw new Error("Mobile number already registered by another account.");
+        }
+      }
+
       // Create user auth account
       const cred = await firebase.auth().createUserWithEmailAndPassword(email, password);
       
@@ -295,6 +306,9 @@ const Auth = (() => {
       const users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
       if (users.some(u => u.email === email)) {
         throw new Error("Email already registered");
+      }
+      if (mobile && users.some(u => u.mobile === mobile)) {
+        throw new Error("Mobile number already registered by another account.");
       }
 
       const newUser = {

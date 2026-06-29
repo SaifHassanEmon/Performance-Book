@@ -446,6 +446,21 @@ const Sync = (() => {
     }
   }
 
+  async function adminDeleteUser(uid) {
+    const currentUser = Auth.getCurrentUser();
+    const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
+    if (!currentUser || !isAdmin) {
+      throw new Error("Unauthorized. Admin role required.");
+    }
+    if (FirebaseAvailable) {
+      await dbFirestore.collection('users').doc(uid).delete();
+    } else {
+      let users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
+      users = users.filter(u => u.uid !== uid);
+      localStorage.setItem('perfbook_mock_users', JSON.stringify(users));
+    }
+  }
+
   return {
     submitMonthlyReport,
     getSubmittedReportsForSupervisor,
@@ -456,6 +471,7 @@ const Sync = (() => {
     submitDailyReports,
     getMemberSubmissions,
     getAllUsers,
-    adminUpdateUser
+    adminUpdateUser,
+    adminDeleteUser
   };
 })();
