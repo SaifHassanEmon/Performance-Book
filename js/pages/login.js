@@ -186,7 +186,7 @@ Router.register('login', async function (container) {
         resendBtn.textContent = 'Sending...';
         try {
           await Auth.resendVerification(email, password);
-          App.showToast('Verification email resent successfully! Please check your inbox.', 'success');
+          App.showToast('Verification email resent successfully! Please check your Inbox and Spam/Junk folder.', 'success');
           if (resendContainer) {
             resendContainer.style.display = 'none';
           }
@@ -233,8 +233,8 @@ Router.register('login', async function (container) {
             }
             const additionalData = { mobile, university, bloodGroup };
             await Auth.register(email, password, name, additionalData);
-            if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable) {
-              App.showToast('Registration successful! A verification email has been sent.', 'success');
+             if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable) {
+              App.showToast('Registration successful! A verification email has been sent. Please check your Inbox and Spam/Junk folder!', 'success');
             } else {
               App.showToast('Registration successful! (Offline Mock Mode: No email sent)', 'success');
             }
