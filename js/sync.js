@@ -453,11 +453,40 @@ const Sync = (() => {
       throw new Error("Unauthorized. Admin role required.");
     }
     if (FirebaseAvailable) {
+      // 1. Delete user profile document
       await dbFirestore.collection('users').doc(uid).delete();
+
+      // 2. Delete all daily reports of this user
+      const dailySnap = await dbFirestore.collection('daily_reports').where('uid', '==', uid).get();
+      if (!dailySnap.empty) {
+        const dailyBatch = dbFirestore.batch();
+        dailySnap.forEach(doc => {
+          dailyBatch.delete(doc.ref);
+        });
+        await dailyBatch.commit();
+      }
+
+      // 3. Delete all monthly reports/submissions of this user
+      const monthlySnap = await dbFirestore.collection('monthly_reports').where('uid', '==', uid).get();
+      if (!monthlySnap.empty) {
+        const monthlyBatch = dbFirestore.batch();
+        monthlySnap.forEach(doc => {
+          monthlyBatch.delete(doc.ref);
+        });
+        await monthlyBatch.commit();
+      }
     } else {
       let users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
       users = users.filter(u => u.uid !== uid);
       localStorage.setItem('perfbook_mock_users', JSON.stringify(users));
+
+      let mockDailies = JSON.parse(localStorage.getItem('perfbook_mock_daily_reports') || '[]');
+      mockDailies = mockDailies.filter(d => d.uid !== uid);
+      localStorage.setItem('perfbook_mock_daily_reports', JSON.stringify(mockDailies));
+
+      let mockSubmissions = JSON.parse(localStorage.getItem('perfbook_mock_submissions') || '[]');
+      mockSubmissions = mockSubmissions.filter(s => s.uid !== uid);
+      localStorage.setItem('perfbook_mock_submissions', JSON.stringify(mockSubmissions));
     }
   }
 
