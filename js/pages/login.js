@@ -66,7 +66,10 @@ Router.register('login', async function (container) {
             <!-- Password -->
             <div class="form-group" id="auth-password-group" style="margin-bottom: var(--space-lg);">
               <label class="form-label">Password</label>
-              <input type="password" id="auth-password" class="form-input" placeholder="••••••••" required>
+              <div style="position: relative;">
+                <input type="password" id="auth-password" class="form-input" placeholder="••••••••" style="padding-right: 40px;" required>
+                <button type="button" class="password-toggle-btn" data-target="auth-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; padding: 0;">👁️</button>
+              </div>
             </div>
 
             <!-- Register Bottom Fields -->
@@ -74,7 +77,10 @@ Router.register('login', async function (container) {
               <!-- Confirm Password -->
               <div class="form-group">
                 <label class="form-label">Confirm Password</label>
-                <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••">
+                <div style="position: relative;">
+                  <input type="password" id="auth-confirm-password" class="form-input" placeholder="••••••••" style="padding-right: 40px;">
+                  <button type="button" class="password-toggle-btn" data-target="auth-confirm-password" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; padding: 0;">👁️</button>
+                </div>
               </div>
             </div>
 
@@ -274,6 +280,23 @@ Router.register('login', async function (container) {
         }
       });
     }
+
+    // Toggle password visibility listener
+    container.querySelectorAll('.password-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const input = container.querySelector(`#${targetId}`);
+        if (input) {
+          if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+          } else {
+            input.type = 'password';
+            btn.textContent = '👁️';
+          }
+        }
+      });
+    });
   }
 
   renderView();
