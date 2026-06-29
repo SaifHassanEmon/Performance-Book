@@ -28,16 +28,21 @@ if (isConfigured && typeof firebase !== 'undefined') {
   try {
     firebase.initializeApp(firebaseConfig);
     dbFirestore = firebase.firestore();
-    // Enable offline persistence in Firestore for better UX
-    dbFirestore.enablePersistence().catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('Firestore persistence failed: Multiple tabs open');
-      } else if (err.code === 'unimplemented') {
-        console.warn('Firestore persistence is not supported by this browser');
-      }
-    });
     FirebaseAvailable = true;
     console.log("Firebase initialized successfully in online mode.");
+
+    // Enable offline persistence in Firestore for better UX
+    try {
+      dbFirestore.enablePersistence().catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn('Firestore persistence failed: Multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+          console.warn('Firestore persistence is not supported by this browser');
+        }
+      });
+    } catch (persistErr) {
+      console.warn("Firestore offline persistence failed to initialize:", persistErr);
+    }
   } catch (error) {
     console.error("Firebase initialization failed:", error);
   }
