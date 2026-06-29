@@ -42,6 +42,7 @@ Router.register('daily-report', async function (container) {
 
   async function saveAllChanges() {
     const promises = [];
+    const modifiedDaysList = Array.from(modifiedDays);
     modifiedDays.forEach(day => {
       promises.push(saveDay(day));
     });
@@ -52,6 +53,20 @@ Router.register('daily-report', async function (container) {
       saveBtn.style.display = 'none';
     }
     App.showToast(I18n.t('daily.saved'), 'success');
+
+    // Auto-sync daily reports to Firestore in the background
+    if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable) {
+      const savedReports = [];
+      for (const day of modifiedDaysList) {
+        const report = await DB.getDailyReport(currentYear, currentMonth, day);
+        if (report) savedReports.push(report);
+      }
+      if (savedReports.length > 0) {
+        Sync.uploadDailyReports(savedReports).catch(err => {
+          console.warn("Background daily reports upload failed:", err);
+        });
+      }
+    }
   }
 
   function showUnsavedDialog(proceedCallback) {

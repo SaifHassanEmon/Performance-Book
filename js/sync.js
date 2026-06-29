@@ -608,6 +608,55 @@ const Sync = (() => {
       console.error("Error during data sync down:", err);
       return false;
     }
+  async function uploadDailyReports(reports) {
+    if (!FirebaseAvailable) return;
+    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+    if (!user) return;
+
+    try {
+      const batch = dbFirestore.batch();
+      reports.forEach(dayReport => {
+        const dayId = `${dayReport.year}_${dayReport.month}_${dayReport.day}_${user.uid}`;
+        const dayRef = dbFirestore.collection('daily_reports').doc(dayId);
+        batch.set(dayRef, { ...dayReport, uid: user.uid }, { merge: true });
+      });
+      await batch.commit();
+      console.log("Daily reports batch uploaded to Firestore.");
+    } catch (err) {
+      console.error("Failed to upload daily reports to Firestore:", err);
+    }
+  }
+
+  async function uploadMonthlyPlan(plan) {
+    if (!FirebaseAvailable) return;
+    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+    if (!user) return;
+
+    try {
+      const reportId = `${plan.year}_${plan.month}_${user.uid}`;
+      const planRef = dbFirestore.collection('monthly_reports').doc(reportId);
+      
+      const doc = await planRef.get();
+      let status = 'draft';
+      if (doc.exists) {
+        status = doc.data().status || 'draft';
+      }
+
+      const payload = {
+        ...plan,
+        id: reportId,
+        uid: user.uid,
+        memberName: user.displayName,
+        memberEmail: user.email,
+        memberUposakha: user.uposakha || '',
+        status: status
+      };
+
+      await planRef.set(payload, { merge: true });
+      console.log("Monthly plan saved to Firestore as draft/merge.");
+    } catch (err) {
+      console.error("Failed to upload monthly plan to Firestore:", err);
+    }
   }
 
   return {
@@ -622,6 +671,8 @@ const Sync = (() => {
     getAllUsers,
     adminUpdateUser,
     adminDeleteUser,
-    syncDownData
+    syncDownData,
+    uploadDailyReports,
+    uploadMonthlyPlan
   };
 })();

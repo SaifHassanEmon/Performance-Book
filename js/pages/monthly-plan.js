@@ -743,6 +743,13 @@ Router.register('monthly-plan', async function (container) {
   async function savePlan() {
     const data = collectFormData();
     await DB.saveMonthlyPlan(data);
+
+    // Auto-sync monthly plan to Firestore in the background as draft/merge
+    if (typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable) {
+      Sync.uploadMonthlyPlan(data).catch(err => {
+        console.warn("Background monthly plan upload failed:", err);
+      });
+    }
   }
 
   // ---- Initial render ----
