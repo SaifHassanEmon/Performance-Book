@@ -277,6 +277,16 @@ Router.register('home', async function (container) {
   // Trigger feedback check
   checkForFeedback();
 
+  // Trigger background sync-down to pull changes updated from other devices/web
+  if (typeof Sync !== 'undefined' && Sync.syncDownData) {
+    Sync.syncDownData().then(hasChanges => {
+      if (hasChanges) {
+        console.log("New reports synced down from Firestore. Refreshing dashboard...");
+        Router.navigate('home');
+      }
+    });
+  }
+
   // ────────────────────────────────────────────────────────────
   // Helper: build the recent activity list HTML
   // ────────────────────────────────────────────────────────────

@@ -490,6 +490,92 @@ const Sync = (() => {
     }
   }
 
+  async function syncDownData() {
+    if (!FirebaseAvailable) return false;
+    const user = typeof Auth !== 'undefined' ? Auth.getCurrentUser() : null;
+    if (!user) return false;
+
+    let hasChanges = false;
+    try {
+      console.log("Starting data sync down from Firestore...");
+
+      // 1. Fetch user's daily reports from Firestore
+      const dailySnap = await dbFirestore.collection('daily_reports')
+        .where('uid', '==', user.uid)
+        .get();
+
+      if (!dailySnap.empty) {
+        const localReports = [];
+        dailySnap.forEach(doc => {
+          localReports.push(doc.data());
+        });
+
+        for (const report of localReports) {
+          const existing = await DB.getDailyReport(report.year, report.month, report.day);
+          if (existing) {
+            // Check if it's different
+            let diff = false;
+            for (const key of Object.keys(report)) {
+              if (report[key] !== existing[key]) {
+                diff = true;
+                break;
+              }
+            }
+            if (diff) {
+              await db.daily_reports.update(existing.id, { ...report });
+              hasChanges = true;
+            }
+          } else {
+            const cleanReport = { ...report };
+            delete cleanReport.id;
+            await db.daily_reports.add(cleanReport);
+            hasChanges = true;
+          }
+        }
+      }
+
+      // 2. Fetch user's monthly plans/reports from Firestore
+      const monthlySnap = await dbFirestore.collection('monthly_reports')
+        .where('uid', '==', user.uid)
+        .get();
+
+      if (!monthlySnap.empty) {
+        const localMonthly = [];
+        monthlySnap.forEach(doc => {
+          localMonthly.push(doc.data());
+        });
+
+        for (const plan of localMonthly) {
+          const existing = await DB.getMonthlyPlan(plan.year, plan.month);
+          if (existing) {
+            let diff = false;
+            for (const key of Object.keys(plan)) {
+              if (plan[key] !== existing[key]) {
+                diff = true;
+                break;
+              }
+            }
+            if (diff) {
+              await db.monthly_plans.update(existing.id, { ...plan });
+              hasChanges = true;
+            }
+          } else {
+            const cleanPlan = { ...plan };
+            delete cleanPlan.id;
+            await db.monthly_plans.add(cleanPlan);
+            hasChanges = true;
+          }
+        }
+      }
+
+      console.log("Data sync down completed. Changes merged:", hasChanges);
+      return hasChanges;
+    } catch (err) {
+      console.error("Error during data sync down:", err);
+      return false;
+    }
+  }
+
   return {
     submitMonthlyReport,
     getSubmittedReportsForSupervisor,
@@ -501,6 +587,7 @@ const Sync = (() => {
     getMemberSubmissions,
     getAllUsers,
     adminUpdateUser,
-    adminDeleteUser
+    adminDeleteUser,
+    syncDownData
   };
 })();
