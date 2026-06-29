@@ -9,7 +9,7 @@ const DB = (() => {
   function init() {
     db = new Dexie('PerformanceBookDB');
     
-    db.version(1).stores({
+    db.version(2).stores({
       yearly_plans: '++id, year, createdAt',
       monthly_plans: '++id, year, month, createdAt, submitted',
       daily_reports: '++id, [year+month+day], year, month, day, createdAt',
