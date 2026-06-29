@@ -53,7 +53,12 @@ Router.register('home', async function (container) {
   // ── Render HTML ───────────────────────────────────────────
   container.innerHTML = `
     <!-- ★ Greeting ★ -->
-    <div class="home-greeting" style="text-align:center; margin-bottom:var(--space-xl);">
+    <div class="home-greeting" style="position: relative; text-align:center; margin-bottom:var(--space-xl); padding-top: 4px;">
+      <!-- Profile Button in Top Right Corner -->
+      <button id="dashboard-profile-btn" style="position: absolute; right: 0; top: 0; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm);" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'" title="My Profile">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
+
       <h2 style="font-size:1.25rem; font-weight:700; margin-bottom:4px;"
           data-i18n="home.greeting">${I18n.t('home.greeting')}</h2>
       <p style="font-size:0.8125rem; color:var(--text-muted);">${dateStr}</p>
@@ -186,6 +191,14 @@ Router.register('home', async function (container) {
       Router.navigate(btn.getAttribute('data-nav'));
     });
   });
+
+  // ── Wire up dashboard profile button click ────────────────
+  const dashboardProfileBtn = container.querySelector('#dashboard-profile-btn');
+  if (dashboardProfileBtn) {
+    dashboardProfileBtn.addEventListener('click', () => {
+      Router.navigate('profile');
+    });
+  }
 
   // ── Wire up Recent-Activity row clicks → daily-report ─────
   container.querySelectorAll('.recent-item[data-date]').forEach(item => {

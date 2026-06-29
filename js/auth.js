@@ -350,10 +350,10 @@ const Auth = (() => {
   async function logout() {
     localStorage.removeItem('perfbook_supervisor_session');
     localStorage.removeItem('perfbook_admin_session');
+    currentUser = null;
     if (FirebaseAvailable) {
       await firebase.auth().signOut();
     } else {
-      currentUser = null;
       localStorage.removeItem('perfbook_mock_session');
       triggerCallbacks();
     }
