@@ -496,8 +496,27 @@ const Sync = (() => {
     if (!user) return false;
 
     let hasChanges = false;
+    
+    const TRACKING_FIELDS = [
+      'quranS', 'quranT', 'hadithNum', 'litI', 'litG', 'academic',
+      'classT', 'classA', 'salatJamat', 'salatKaja',
+      'contactM', 'contactA', 'contactW', 'contactS',
+      'contactF', 'contactMS', 'contactWW', 'contactR',
+      'dawah', 'orgWork', 'sleeping', 'socialMedia',
+      'newsReading', 'exercise', 'selfEval'
+    ];
+
+    const MONTHLY_FIELDS = [
+      'mqTotalDays', 'mqAvgAyah', 'mhTotalDays', 'mhAvg', 'mhMasnunDua', 'mhMakingDars', 'mhMemorized', 'mhSubject',
+      'mlTotalPages', 'mlIslamic', 'mlOthers', 'mlName', 'maTotalDays', 'maAvgHours',
+      'mcMember', 'mcAssociate', 'mcWorker', 'mcSupporter', 'mcFriends', 'mcWellWisher', 'mcMeritorious', 'mcReader',
+      'mdDay', 'mdAvgHours', 'moTotalDays', 'moAvgHours', 'msAvgHours', 'msDays', 'msTotalMinutes',
+      'mbPersonal', 'mbStudentWelfare', 'mbSwBox', 'mbTotalIncrease', 'mbTableBank', 'mbOthers',
+      'selfEvalDays', 'exerciseDays', 'newsDays', 'status', 'supervisorFeedback'
+    ];
+
     try {
-      console.log("Starting data sync down from Firestore...");
+      console.log("Starting loop-proof data sync down from Firestore...");
 
       // 1. Fetch user's daily reports from Firestore
       const dailySnap = await dbFirestore.collection('daily_reports')
@@ -511,18 +530,25 @@ const Sync = (() => {
         });
 
         for (const report of localReports) {
-          const existing = await DB.getDailyReport(report.year, report.month, report.day);
+          const existing = await DB.getDailyReport(parseInt(report.year, 10), parseInt(report.month, 10), parseInt(report.day, 10));
           if (existing) {
-            // Check if it's different
             let diff = false;
-            for (const key of Object.keys(report)) {
-              if (report[key] !== existing[key]) {
+            for (const field of TRACKING_FIELDS) {
+              const val1 = String(report[field] ?? '');
+              const val2 = String(existing[field] ?? '');
+              if (val1 !== val2) {
                 diff = true;
                 break;
               }
             }
             if (diff) {
-              await db.daily_reports.update(existing.id, { ...report });
+              const updatePayload = {};
+              TRACKING_FIELDS.forEach(field => {
+                if (report[field] !== undefined) {
+                  updatePayload[field] = report[field];
+                }
+              });
+              await db.daily_reports.update(existing.id, updatePayload);
               hasChanges = true;
             }
           } else {
@@ -546,17 +572,25 @@ const Sync = (() => {
         });
 
         for (const plan of localMonthly) {
-          const existing = await DB.getMonthlyPlan(plan.year, plan.month);
+          const existing = await DB.getMonthlyPlan(parseInt(plan.year, 10), parseInt(plan.month, 10));
           if (existing) {
             let diff = false;
-            for (const key of Object.keys(plan)) {
-              if (plan[key] !== existing[key]) {
+            for (const field of MONTHLY_FIELDS) {
+              const val1 = String(plan[field] ?? '');
+              const val2 = String(existing[field] ?? '');
+              if (val1 !== val2) {
                 diff = true;
                 break;
               }
             }
             if (diff) {
-              await db.monthly_plans.update(existing.id, { ...plan });
+              const updatePayload = {};
+              MONTHLY_FIELDS.forEach(field => {
+                if (plan[field] !== undefined) {
+                  updatePayload[field] = plan[field];
+                }
+              });
+              await db.monthly_plans.update(existing.id, updatePayload);
               hasChanges = true;
             }
           } else {
