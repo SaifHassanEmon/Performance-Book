@@ -675,7 +675,7 @@ const I18n = (() => {
     "practical.kajaDesc": "কাজা = পরে আদায়কৃত ছুটে যাওয়া সালাত",
     "practical.contact1": "যোগাযোগ (গ্রুপ ১)",
     "practical.mDesc": "M = সদস্য",
-    "practical.aDesc": "A = সহযোগী",
+    "practical.aDesc": "A = সাথী",
     "practical.wDesc": "W = কর্মী",
     "practical.sContactDesc": "S = সমর্থক",
     "practical.contact2": "যোগাযোগ (গ্রুপ ২)",

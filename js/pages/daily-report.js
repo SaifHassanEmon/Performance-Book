@@ -982,13 +982,13 @@ Router.register('daily-report', async function (container) {
             <div style="font-weight: 700; font-size: 0.85rem; color: var(--color-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
               <span>👥</span> Personal Contacts
             </div>
-            ${renderModalRow('Member (রুকন)', summary.mcMember)}
-            ${renderModalRow('Associate (কর্মী)', summary.mcAssociate)}
-            ${renderModalRow('Worker (সহযোগী)', summary.mcWorker)}
+            ${renderModalRow('Member (সদস্য)', summary.mcMember)}
+            ${renderModalRow('Associate (সাথী)', summary.mcAssociate)}
+            ${renderModalRow('Worker (কর্মী)', summary.mcWorker)}
             ${renderModalRow('Supporter (সমর্থক)', summary.mcSupporter)}
             ${renderModalRow('Friends (বন্ধু)', summary.mcFriends)}
             ${renderModalRow('Well Wisher (শুভাকাঙ্ক্ষী)', summary.mcWellWisher)}
-            ${renderModalRow('Meritorious (মেধাবী छात्र)', summary.mcMeritorious)}
+            ${renderModalRow('Meritorious (মেধাবী ছাত্র)', summary.mcMeritorious)}
             ${renderModalRow('Reader (পাঠক)', summary.mcReader)}
           </div>
         </div>
