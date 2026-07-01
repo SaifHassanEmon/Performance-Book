@@ -5,6 +5,7 @@
    ============================================================ */
 
 Router.register('home', async function (container) {
+  const user = Auth.getCurrentUser();
 
   // ── Current date helpers ──────────────────────────────────
   const now   = new Date();
@@ -159,6 +160,20 @@ Router.register('home', async function (container) {
         <div class="quick-action-title" data-i18n="home.salatTimes">${I18n.t('home.salatTimes')}</div>
         <div class="quick-action-desc"  data-i18n="home.salatTimesDesc">${I18n.t('home.salatTimesDesc')}</div>
       </button>
+      ${(user && (user.isCoAdmin || user.role === 'co-admin')) ? `
+      <button class="quick-action-card" data-nav="admin">
+        <div class="quick-action-icon purple">🏢</div>
+        <div class="quick-action-title">View Thana</div>
+        <div class="quick-action-desc">Inspect member reports & manage divisions</div>
+      </button>
+      ` : ''}
+      ${(user && (user.isAdmin || user.role === 'admin')) ? `
+      <button class="quick-action-card" data-nav="admin">
+        <div class="quick-action-icon purple">🏢</div>
+        <div class="quick-action-title">Admin Panel</div>
+        <div class="quick-action-desc">Manage profiles & organization structure</div>
+      </button>
+      ` : ''}
       <a href="https://www.icsbook.info/" target="_blank" rel="noopener noreferrer" class="quick-action-card" style="text-decoration: none;">
         <div class="quick-action-icon blue">📚</div>
         <div class="quick-action-title" data-i18n="practical.libraryTitle" style="color: var(--text-primary);">${I18n.t('practical.libraryTitle')}</div>

@@ -146,27 +146,46 @@ const Sync = (() => {
   // ---- Fetch Submitted Reports for Supervisor ----
   async function getSubmittedReportsForSupervisor() {
     const user = Auth.getCurrentUser();
-    const isSuper = user && (user.isSupervisor || user.role === 'supervisor' || user.isAdmin || user.role === 'admin');
-    if (!user || !isSuper) {
-      throw new Error("Unauthorized access. Supervisor role required.");
+    const isSuper = user && (user.isSupervisor || user.role === 'supervisor');
+    const isAdmin = user && (user.isAdmin || user.role === 'admin');
+    const isCoAdmin = user && (user.isCoAdmin || user.role === 'co-admin');
+    if (!user || (!isSuper && !isAdmin && !isCoAdmin)) {
+      throw new Error("Unauthorized access. Supervisor, Admin, or Co-admin role required.");
     }
 
+    let reports = [];
     if (FirebaseAvailable) {
       // Fetch submitted reports from Firestore
       const snapshot = await dbFirestore.collection('monthly_reports')
         .orderBy('submittedAt', 'desc')
         .get();
       
-      const reports = [];
       snapshot.forEach(doc => {
         reports.push(doc.data());
       });
-      return reports;
     } else {
       // Mock supervisor fetch: read from shared localStorage queue
       const submissions = JSON.parse(localStorage.getItem('perfbook_mock_submissions') || '[]');
       // Sort by submittedAt descending
-      return submissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      reports = submissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    }
+
+    if (isAdmin) {
+      return reports;
+    } else if (isCoAdmin) {
+      // Co-admin: Filter to only reports of members in their thana
+      const coAdminThana = user.thana || '';
+      let users = [];
+      if (FirebaseAvailable) {
+        const uSnap = await dbFirestore.collection('users').get();
+        uSnap.forEach(d => users.push(d.data()));
+      } else {
+        users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
+      }
+      const thanaUserIds = users.filter(u => u.thana === coAdminThana).map(u => u.uid);
+      return reports.filter(r => thanaUserIds.includes(r.uid));
+    } else {
+      return reports;
     }
   }
 
@@ -399,27 +418,60 @@ const Sync = (() => {
   async function getAllUsers() {
     const currentUser = Auth.getCurrentUser();
     const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
-    if (!currentUser || !isAdmin) {
-      throw new Error("Unauthorized. Admin role required.");
+    const isCoAdmin = currentUser && (currentUser.isCoAdmin || currentUser.role === 'co-admin');
+    if (!currentUser || (!isAdmin && !isCoAdmin)) {
+      throw new Error("Unauthorized. Admin or Co-admin role required.");
     }
+
+    let allUsers = [];
     if (FirebaseAvailable) {
       const snapshot = await dbFirestore.collection('users').get();
-      const users = [];
       snapshot.forEach(doc => {
-        users.push(doc.data());
+        allUsers.push(doc.data());
       });
-      return users;
     } else {
-      return JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
+      allUsers = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
+    }
+
+    if (isAdmin) {
+      return allUsers;
+    } else {
+      // Co-admin: Filter to only users of their thana
+      const coAdminThana = currentUser.thana || '';
+      return allUsers.filter(u => u.thana === coAdminThana);
     }
   }
 
   async function adminUpdateUser(uid, updates) {
     const currentUser = Auth.getCurrentUser();
     const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
-    if (!currentUser || !isAdmin) {
-      throw new Error("Unauthorized. Admin role required.");
+    const isCoAdmin = currentUser && (currentUser.isCoAdmin || currentUser.role === 'co-admin');
+    if (!currentUser || (!isAdmin && !isCoAdmin)) {
+      throw new Error("Unauthorized. Admin or Co-admin role required.");
     }
+
+    // Co-admin security check
+    if (isCoAdmin) {
+      let targetUser = null;
+      if (FirebaseAvailable) {
+        const doc = await dbFirestore.collection('users').doc(uid).get();
+        if (doc.exists) targetUser = doc.data();
+      } else {
+        const users = JSON.parse(localStorage.getItem('perfbook_mock_users') || '[]');
+        targetUser = users.find(u => u.uid === uid);
+      }
+
+      if (!targetUser || targetUser.thana !== currentUser.thana) {
+        throw new Error("Unauthorized. Co-admin can only update users of their own thana.");
+      }
+
+      // Restrict role changes and Thana assignments for co-admins
+      delete updates.role;
+      delete updates.isAdmin;
+      delete updates.isCoAdmin;
+      delete updates.thana;
+    }
+
     if (FirebaseAvailable) {
       await dbFirestore.collection('users').doc(uid).update(updates);
     } else {
@@ -443,6 +495,83 @@ const Sync = (() => {
           }
         }
       }
+    }
+  }
+
+  // ---- Fetch single monthly report by UID and date ----
+  async function getMemberMonthlyReport(memberUid, year, month) {
+    if (FirebaseAvailable) {
+      const snapshot = await dbFirestore.collection('monthly_reports')
+        .where('uid', '==', memberUid)
+        .where('year', '==', parseInt(year))
+        .where('month', '==', parseInt(month))
+        .limit(1)
+        .get();
+      if (!snapshot.empty) {
+        return snapshot.docs[0].data();
+      }
+      return null;
+    } else {
+      const submissions = JSON.parse(localStorage.getItem('perfbook_mock_submissions') || '[]');
+      return submissions.find(s => s.uid === memberUid && s.year === parseInt(year) && s.month === parseInt(month)) || null;
+    }
+  }
+
+  // ---- Get Org Structure ----
+  async function getOrgStructure() {
+    const defaultOrg = {
+      thanas: ["DCS", "Software", "Engineering"],
+      wards: [
+        { name: "Ward A", thana: "DCS" },
+        { name: "Ward B", thana: "Software" },
+        { name: "Ward C", thana: "Engineering" }
+      ],
+      uposakhas: [
+        { name: "Safa", thana: "DCS", ward: "Ward A" },
+        { name: "Marwa", thana: "DCS", ward: "Ward A" },
+        { name: "Jabale Arafa", thana: "DCS", ward: "Ward B" }
+      ]
+    };
+
+    if (FirebaseAvailable) {
+      try {
+        const doc = await dbFirestore.collection('metadata').doc('org_structure').get();
+        if (doc.exists) {
+          return doc.data();
+        } else {
+          // Initialize in Firestore
+          await dbFirestore.collection('metadata').doc('org_structure').set(defaultOrg);
+          return defaultOrg;
+        }
+      } catch (err) {
+        console.warn("Failed to read org_structure from Firestore, using defaults:", err);
+        return defaultOrg;
+      }
+    } else {
+      const cached = localStorage.getItem('perfbook_mock_org_structure');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {}
+      }
+      localStorage.setItem('perfbook_mock_org_structure', JSON.stringify(defaultOrg));
+      return defaultOrg;
+    }
+  }
+
+  // ---- Save Org Structure ----
+  async function saveOrgStructure(data) {
+    const currentUser = Auth.getCurrentUser();
+    const isAdmin = currentUser && (currentUser.isAdmin || currentUser.role === 'admin');
+    const isCoAdmin = currentUser && (currentUser.isCoAdmin || currentUser.role === 'co-admin');
+    if (!currentUser || (!isAdmin && !isCoAdmin)) {
+      throw new Error("Unauthorized. Admin or Co-admin role required.");
+    }
+
+    if (FirebaseAvailable) {
+      await dbFirestore.collection('metadata').doc('org_structure').set(data);
+    } else {
+      localStorage.setItem('perfbook_mock_org_structure', JSON.stringify(data));
     }
   }
 
@@ -727,6 +856,9 @@ const Sync = (() => {
     adminDeleteUser,
     syncDownData,
     uploadDailyReports,
-    uploadMonthlyPlan
+    uploadMonthlyPlan,
+    getMemberMonthlyReport,
+    getOrgStructure,
+    saveOrgStructure
   };
 })();

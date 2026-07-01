@@ -170,7 +170,8 @@ const Router = (() => {
       supervisorBtn.style.display = (currentPage === 'home' && user && isSuper) ? '' : 'none';
     }
     if (adminBtn) {
-      adminBtn.style.display = (currentPage === 'home' && user && isAdmin) ? '' : 'none';
+      const isCoAdmin = user && (user.isCoAdmin || user.role === 'co-admin');
+      adminBtn.style.display = (currentPage === 'home' && user && (isAdmin || isCoAdmin)) ? '' : 'none';
     }
   }
 

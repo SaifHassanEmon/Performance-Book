@@ -94,6 +94,14 @@ Router.register('profile', async function (container) {
           </div>
           ` : ''}
 
+          <!-- Ward -->
+          ${user.ward ? `
+          <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
+            <span style="color:var(--text-secondary);">Ward</span>
+            <span style="color:var(--text-primary); font-weight:600;">${user.ward}</span>
+          </div>
+          ` : ''}
+
           <!-- Uposakha -->
           ${user.uposakha ? `
           <div style="display:flex; justify-content:space-between; padding:var(--space-md) 0; border-bottom:1px solid var(--border-color); font-size:0.875rem;">
@@ -132,6 +140,20 @@ Router.register('profile', async function (container) {
 
         </div>
 
+        <!-- Thana Dashboard Button (if co-admin) -->
+        ${(user.isCoAdmin || user.role === 'co-admin') ? `
+        <button id="profile-thana-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; border-radius: 8px; cursor: pointer; margin-bottom: var(--space-sm);">
+          View Thana Dashboard
+        </button>
+        ` : ''}
+
+        <!-- Admin Panel Button (if admin) -->
+        ${(user.isAdmin || user.role === 'admin') ? `
+        <button id="profile-admin-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; border-radius: 8px; cursor: pointer; margin-bottom: var(--space-sm);">
+          View Admin Panel
+        </button>
+        ` : ''}
+
         <!-- Log Out Button -->
         <button id="profile-logout-btn" class="btn" style="width: 100%; padding: 12px; border: 1px solid rgba(239,68,68,0.25); background: rgba(239,68,68,0.03); color: var(--color-error); font-weight: 700; border-radius: 8px; cursor: pointer;" data-i18n="profile.signOut">
           ${I18n.t('profile.signOut')}
@@ -150,6 +172,20 @@ Router.register('profile', async function (container) {
     if (backBtn) {
       backBtn.addEventListener('click', () => {
         Router.navigate('settings');
+      });
+    }
+
+    // Thana / Admin Dashboard clicks
+    const thanaBtn = container.querySelector('#profile-thana-btn');
+    if (thanaBtn) {
+      thanaBtn.addEventListener('click', () => {
+        Router.navigate('admin');
+      });
+    }
+    const adminBtn = container.querySelector('#profile-admin-btn');
+    if (adminBtn) {
+      adminBtn.addEventListener('click', () => {
+        Router.navigate('admin');
       });
     }
 

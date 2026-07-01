@@ -206,6 +206,7 @@ const Auth = (() => {
           bloodGroup: '',
           sakha: '',
           thana: '',
+          ward: '',
           uposakha: '',
           supervisedUposakhas: []
         };
@@ -241,6 +242,7 @@ const Auth = (() => {
           bloodGroup: '',
           sakha: '',
           thana: '',
+          ward: '',
           uposakha: '',
           supervisedUposakhas: []
         };
@@ -289,6 +291,7 @@ const Auth = (() => {
         bloodGroup: additionalData.bloodGroup || '',
         sakha: '',
         thana: '',
+        ward: '',
         uposakha: '',
         supervisedUposakhas: []
       };
@@ -323,6 +326,7 @@ const Auth = (() => {
         bloodGroup: additionalData.bloodGroup || '',
         sakha: '',
         thana: '',
+        ward: '',
         uposakha: '',
         supervisedUposakhas: []
       };
