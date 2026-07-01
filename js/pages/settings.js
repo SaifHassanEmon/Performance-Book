@@ -159,8 +159,18 @@ Router.register('settings', async function (container) {
         </div>
 
         <!-- 3.5 Cloud Sync Diagnostics Section -->
-        <div class="settings-group" id="diagnostics-section" style="${typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable ? '' : 'display: none;'}">
+        <div class="settings-group" id="diagnostics-section">
           <div class="settings-group-title">Cloud Sync Diagnostics</div>
+
+          <div class="settings-item" id="diag-error-item" style="display: none;">
+            <div class="settings-item-left">
+              <div class="settings-item-icon" style="background: rgba(239, 68, 68, 0.12); color: var(--color-error);">⚠️</div>
+              <div>
+                <div class="settings-item-label" style="color: var(--color-error);">Init/Config Error</div>
+                <div class="settings-item-desc" id="diag-firebase-error" style="color: var(--color-error); font-size: 0.75rem; word-break: break-all; white-space: pre-wrap;">None</div>
+              </div>
+            </div>
+          </div>
           
           <div class="settings-item">
             <div class="settings-item-left">
@@ -183,13 +193,7 @@ Router.register('settings', async function (container) {
           </div>
 
           <div style="display: flex; gap: var(--space-sm); padding: var(--space-md) var(--space-lg);">
-            <button type="button" class="btn btn-primary" id="diag-sync-btn" style="flex: 1; padding: 10px; font-weight: 600; font-size: 0.85rem; border-radius: 6px;">Sync Now</button>
-            <button type="button" class="btn btn-secondary" id="diag-test-btn" style="flex: 1; padding: 10px; font-weight: 600; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">Test Firestore</button>
-          </div>
-          
-          <div id="diag-results-card" class="glass-card" style="margin: 0 var(--space-lg) var(--space-md); padding: var(--space-md); display: none; background: rgba(255,255,255,0.01); border-radius: 8px; border: 1px solid var(--border-color);">
-            <div style="font-weight: 700; font-size: 0.8rem; color: var(--color-primary); margin-bottom: var(--space-xs);">Test Results:</div>
-            <div id="diag-results-text" style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; word-break: break-all; white-space: pre-wrap;"></div>
+            <button type="button" class="btn btn-primary" id="diag-sync-btn" style="width: 100%; padding: 10px; font-weight: 600; font-size: 0.85rem; border-radius: 6px;" ${typeof FirebaseAvailable !== 'undefined' && FirebaseAvailable ? '' : 'disabled'}>Sync Now</button>
           </div>
         </div>
 
@@ -232,8 +236,22 @@ Router.register('settings', async function (container) {
   }
 
   function updateSyncDiagnosticsUI() {
+    const errorItem = container.querySelector('#diag-error-item');
+    const errorEl = container.querySelector('#diag-firebase-error');
     const statusEl = container.querySelector('#diag-sync-status');
     const timeEl = container.querySelector('#diag-sync-time');
+
+    const initErr = localStorage.getItem('perfbook_firebase_error');
+    
+    if (errorItem && errorEl) {
+      if (initErr) {
+        errorItem.style.display = '';
+        errorEl.textContent = `Initialization: ${initErr}`;
+      } else {
+        errorItem.style.display = 'none';
+      }
+    }
+
     if (statusEl) statusEl.textContent = localStorage.getItem('perfbook_last_sync_status') || 'Never synced';
     if (timeEl) timeEl.textContent = localStorage.getItem('perfbook_last_sync_time') || 'N/A';
   }
@@ -241,9 +259,6 @@ Router.register('settings', async function (container) {
   function wireEvents() {
     // Cloud Diagnostics events
     const syncNowBtn = container.querySelector('#diag-sync-btn');
-    const testFirestoreBtn = container.querySelector('#diag-test-btn');
-    const resultsCard = container.querySelector('#diag-results-card');
-    const resultsText = container.querySelector('#diag-results-text');
 
     if (syncNowBtn) {
       syncNowBtn.addEventListener('click', async () => {
@@ -265,46 +280,6 @@ Router.register('settings', async function (container) {
         } finally {
           syncNowBtn.disabled = false;
           syncNowBtn.textContent = 'Sync Now';
-        }
-      });
-    }
-
-    if (testFirestoreBtn) {
-      testFirestoreBtn.addEventListener('click', async () => {
-        if (!testFirestoreBtn) return;
-        testFirestoreBtn.disabled = true;
-        testFirestoreBtn.textContent = 'Testing...';
-        if (resultsCard) resultsCard.style.display = 'block';
-        if (resultsText) resultsText.textContent = 'Running connection tests...\n';
-        
-        try {
-          const user = Auth.getCurrentUser();
-          if (!user) throw new Error('Not logged in to Performance Book.');
-          
-          if (resultsText) resultsText.textContent += `Logged in as: ${user.email} (${user.uid})\n`;
-          if (resultsText) resultsText.textContent += `Firebase available: ${FirebaseAvailable}\n`;
-          
-          if (!FirebaseAvailable || !dbFirestore) {
-            throw new Error('Firebase is not configured or disabled.');
-          }
-
-          if (resultsText) resultsText.textContent += 'Attempting to write test doc to "users" collection...\n';
-          const testRef = dbFirestore.collection('users').doc(user.uid);
-          await testRef.set({ lastActiveTest: new Date().toISOString() }, { merge: true });
-          if (resultsText) resultsText.textContent += '✓ Write test successful!\n';
-
-          if (resultsText) resultsText.textContent += 'Attempting to read test doc...\n';
-          const snap = await testRef.get();
-          if (resultsText) resultsText.textContent += `✓ Read test successful! (data: ${JSON.stringify(snap.data())})\n`;
-          
-          if (resultsText) resultsText.textContent += '\nTest Result: ALL TESTS PASSED! Connection is fully working.';
-        } catch (err) {
-          console.error(err);
-          if (resultsText) resultsText.textContent += `\n❌ TEST FAILED: ${err.message || err}\n`;
-          if (resultsText) resultsText.textContent += `Check browser dev tools console for more info.`;
-        } finally {
-          testFirestoreBtn.disabled = false;
-          testFirestoreBtn.textContent = 'Test Firestore';
         }
       });
     }
@@ -345,6 +320,8 @@ Router.register('settings', async function (container) {
           const granted = await Notifications.requestPermission();
           if (!granted) {
             App.showToast(I18n.t('settings.notificationWarning'), 'info', 5000);
+            e.target.checked = false;
+            return;
           }
         }
         await DB.setSetting('salatReminder', e.target.checked);
@@ -360,6 +337,8 @@ Router.register('settings', async function (container) {
           const granted = await Notifications.requestPermission();
           if (!granted) {
             App.showToast(I18n.t('settings.notificationWarning'), 'info', 5000);
+            e.target.checked = false;
+            return;
           }
         }
         await DB.setSetting('dailyReminder', e.target.checked);

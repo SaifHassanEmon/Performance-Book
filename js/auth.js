@@ -350,13 +350,16 @@ const Auth = (() => {
   async function logout() {
     localStorage.removeItem('perfbook_supervisor_session');
     localStorage.removeItem('perfbook_admin_session');
+    localStorage.removeItem('perfbook_mock_session');
     currentUser = null;
     if (FirebaseAvailable) {
-      await firebase.auth().signOut();
-    } else {
-      localStorage.removeItem('perfbook_mock_session');
-      triggerCallbacks();
+      try {
+        await firebase.auth().signOut();
+      } catch (err) {
+        console.warn("Firebase signOut error:", err);
+      }
     }
+    triggerCallbacks();
   }
 
   return {

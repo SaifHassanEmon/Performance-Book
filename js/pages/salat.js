@@ -209,7 +209,9 @@ Router.register('salat', async function (container) {
     if (!timeStr) return '';
     const [h, m] = timeStr.split(':').map(Number);
     const h12 = h % 12 || 12;
-    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const isBn = I18n.getLang() === 'bn';
+    const ampmStr = isBn ? (h >= 12 ? ' পিএম' : ' এএম') : (h >= 12 ? ' PM' : ' AM');
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')}${ampmStr}`;
   }
 
   function formatDiff(diffMs, lang) {

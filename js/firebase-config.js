@@ -26,6 +26,7 @@ const isConfigured =
 
 if (isConfigured && typeof firebase !== 'undefined') {
   try {
+    localStorage.removeItem('perfbook_firebase_error');
     firebase.initializeApp(firebaseConfig);
     dbFirestore = firebase.firestore();
     FirebaseAvailable = true;
@@ -34,18 +35,19 @@ if (isConfigured && typeof firebase !== 'undefined') {
     // Enable offline persistence in Firestore for better UX
     try {
       dbFirestore.enablePersistence().catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('Firestore persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-          console.warn('Firestore persistence is not supported by this browser');
-        }
+        console.warn('Firestore persistence failed:', err);
+        localStorage.setItem('perfbook_firebase_persist_error', err.message || String(err));
       });
     } catch (persistErr) {
       console.warn("Firestore offline persistence failed to initialize:", persistErr);
+      localStorage.setItem('perfbook_firebase_persist_error', persistErr.message || String(persistErr));
     }
   } catch (error) {
     console.error("Firebase initialization failed:", error);
+    localStorage.setItem('perfbook_firebase_error', error.message || String(error));
   }
 } else {
-  console.log("Running in LOCAL-FIRST (Offline/Mock) mode. Configure Firebase in js/firebase-config.js to sync online.");
+  const reason = typeof firebase === 'undefined' ? 'firebase SDK not loaded/undefined' : 'Firebase not configured in config file';
+  console.log("Running in LOCAL-FIRST (Offline/Mock) mode. Reason: " + reason);
+  localStorage.setItem('perfbook_firebase_error', reason);
 }
